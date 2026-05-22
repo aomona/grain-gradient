@@ -28,3 +28,13 @@ export function Hero() {
 ```
 
 React is a peer dependency via the `grain-gradient/react` subpath.
+
+## Local playground
+
+Run a lightweight preview server with:
+
+```bash
+npm run playground
+```
+
+Then open `http://localhost:4173/playground/` to tune presets, colors, and grain settings live.

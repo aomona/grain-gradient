@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>grain-gradient playground</title>
+    <meta
+      name="description"
+      content="Tune grain-gradient presets locally with a fast, dependency-free playground."
+    />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #07090f;
+        --panel: rgba(13, 18, 32, 0.78);
+        --panel-strong: rgba(16, 22, 40, 0.92);
+        --line: rgba(255, 255, 255, 0.12);
+        --line-strong: rgba(255, 255, 255, 0.18);
+        --text: rgba(246, 247, 255, 0.96);
+        --muted: rgba(214, 220, 255, 0.64);
+        --accent: #8de4ff;
+        --accent-strong: #d7ff8b;
+        --shadow: 0 30px 90px rgba(0, 0, 0, 0.42);
+        --radius: 24px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(141, 228, 255, 0.14), transparent 36%),
+          radial-gradient(circle at 85% 15%, rgba(215, 255, 139, 0.1), transparent 32%),
+          linear-gradient(180deg, #090b12, #07090f 58%, #05070b);
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 28px 28px;
+        mask-image: radial-gradient(circle at center, black, transparent 92%);
+        opacity: 0.42;
+      }
+
+      .app {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: minmax(320px, 390px) 1fr;
+        gap: 20px;
+        padding: 20px;
+      }
+
+      .sidebar,
+      .preview-shell {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
+
+      .sidebar {
+        border-radius: 30px;
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .eyebrow {
+        margin: 0;
+        color: var(--accent);
+        font-size: 0.75rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 10px 0 8px;
+        font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+        font-size: clamp(2rem, 3.8vw, 3.1rem);
+        line-height: 0.95;
+        letter-spacing: -0.04em;
+      }
+
+      .lede {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.5;
+        max-width: 34ch;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: 16px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+      }
+
+      .panel-grid {
+        display: grid;
+        gap: 12px;
+      }
+
+      .field {
+        display: grid;
+        gap: 8px;
+      }
+
+      .row {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+      }
+
+      label {
+        font-size: 0.82rem;
+        letter-spacing: 0.02em;
+        color: rgba(236, 240, 255, 0.86);
+      }
+
+      .value {
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+        font-size: 0.82rem;
+      }
+
+      input,
+      select,
+      button {
+        font: inherit;
+      }
+
+      select,
+      input[type="number"],
+      input[type="text"] {
+        width: 100%;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(4, 7, 16, 0.78);
+        color: var(--text);
+        padding: 10px 12px;
+        outline: none;
+      }
+
+      select:focus,
+      input:focus,
+      button:focus-visible {
+        border-color: rgba(141, 228, 255, 0.65);
+        box-shadow: 0 0 0 4px rgba(141, 228, 255, 0.12);
+      }
+
+      input[type="range"] {
+        width: 100%;
+        accent-color: var(--accent);
+      }
+
+      .colors {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .color-field {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 10px 12px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(4, 7, 16, 0.64);
+      }
+
+      input[type="color"] {
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        border-radius: 12px;
+      }
+
+      .color-field span {
+        flex: 1;
+        font-size: 0.82rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+      }
+
+      .seed-grid {
+        display: grid;
+        grid-template-columns: 1fr 88px;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      button {
+        appearance: none;
+        border: 1px solid rgba(141, 228, 255, 0.3);
+        background: linear-gradient(180deg, rgba(141, 228, 255, 0.18), rgba(141, 228, 255, 0.08));
+        color: var(--text);
+        padding: 11px 14px;
+        border-radius: 14px;
+        cursor: pointer;
+        transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        border-color: rgba(141, 228, 255, 0.6);
+      }
+
+      .status {
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      .preview-shell {
+        border-radius: 30px;
+        padding: 18px;
+        display: grid;
+        gap: 14px;
+        min-width: 0;
+      }
+
+      .preview-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .preview-head h2 {
+        margin: 0;
+        font-size: 0.92rem;
+        color: rgba(248, 249, 255, 0.92);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .preview-head p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.84rem;
+      }
+
+      .preview-frame {
+        position: relative;
+        min-height: min(82vh, 960px);
+        border-radius: 26px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: #0b1020;
+      }
+
+      #preview {
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        isolation: isolate;
+      }
+
+      @media (max-width: 1080px) {
+        .app {
+          grid-template-columns: 1fr;
+        }
+
+        .preview-frame {
+          min-height: 68vh;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .app {
+          padding: 12px;
+          gap: 12px;
+        }
+
+        .sidebar,
+        .preview-shell {
+          border-radius: 24px;
+          padding: 16px;
+        }
+
+        .colors,
+        .seed-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .preview-frame {
+          min-height: 58vh;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <aside class="sidebar">
+        <div>
+          <p class="eyebrow">grain-gradient playground</p>
+          <h1>Tune the atmosphere.</h1>
+          <p class="lede">
+            Pick a preset, push the grain, and copy a ready-to-use CSS snippet straight from the
+            library build.
+          </p>
+        </div>
+
+        <section class="panel panel-grid" aria-label="Gradient controls">
+          <div class="field">
+            <div class="row">
+              <label for="preset">Preset</label>
+            </div>
+            <select id="preset"></select>
+          </div>
+
+          <div class="field">
+            <div class="row">
+              <label>Colors</label>
+              <span class="value">4 stops</span>
+            </div>
+            <div class="colors">
+              <label class="color-field"><span>Color 1</span><input id="color-1" type="color" aria-label="Color 1" /></label>
+              <label class="color-field"><span>Color 2</span><input id="color-2" type="color" aria-label="Color 2" /></label>
+              <label class="color-field"><span>Color 3</span><input id="color-3" type="color" aria-label="Color 3" /></label>
+              <label class="color-field"><span>Color 4</span><input id="color-4" type="color" aria-label="Color 4" /></label>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="row">
+              <label for="baseColor">Base color</label>
+            </div>
+            <input id="baseColor" type="color" />
+          </div>
+
+          <div class="field">
+            <div class="row"><label for="frequency">Frequency</label><span class="value" id="frequency-value"></span></div>
+            <input id="frequency" type="range" min="0.35" max="2.4" step="0.01" />
+          </div>
+
+          <div class="field">
+            <div class="row"><label for="contrast">Contrast</label><span class="value" id="contrast-value"></span></div>
+            <input id="contrast" type="range" min="1" max="2.5" step="0.01" />
+          </div>
+
+          <div class="field">
+            <div class="row"><label for="opacity">Opacity</label><span class="value" id="opacity-value"></span></div>
+            <input id="opacity" type="range" min="0" max="0.85" step="0.01" />
+          </div>
+
+          <div class="field">
+            <div class="row"><label for="blur">Blur</label><span class="value" id="blur-value"></span></div>
+            <input id="blur" type="range" min="0" max="80" step="1" />
+          </div>
+
+          <div class="field">
+            <div class="row"><label for="intensity">Intensity / saturation</label><span class="value" id="intensity-value"></span></div>
+            <input id="intensity" type="range" min="0.2" max="2.5" step="0.01" />
+          </div>
+
+          <div class="field">
+            <div class="row"><label for="blendMode">Blend mode</label></div>
+            <select id="blendMode">
+              <option value="overlay">overlay</option>
+              <option value="soft-light">soft-light</option>
+              <option value="multiply">multiply</option>
+              <option value="screen">screen</option>
+              <option value="normal">normal</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <div class="row"><label for="seedRange">Seed</label><span class="value" id="seed-value"></span></div>
+            <div class="seed-grid">
+              <input id="seedRange" type="range" min="0" max="9999" step="1" />
+              <input id="seedNumber" type="number" min="0" max="9999" step="1" />
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="copyCss" type="button">Copy CSS</button>
+            <span class="status" id="status" aria-live="polite"></span>
+          </div>
+        </section>
+      </aside>
+
+      <section class="preview-shell">
+        <div class="preview-head">
+          <div>
+            <h2>Live preview</h2>
+            <p>Pure background only — no text, no framing, no hero content.</p>
+          </div>
+          <p>Updated from dist/index.js</p>
+        </div>
+        <div class="preview-frame" aria-label="Gradient preview">
+          <div id="preview"></div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module">
+      import { createGrainGradientCSS, presets } from "../dist/index.js";
+
+      const $ = (id) => document.getElementById(id);
+
+      const presetSelect = $("preset");
+      const colorInputs = [$("color-1"), $("color-2"), $("color-3"), $("color-4")];
+      const baseColorInput = $("baseColor");
+      const frequencyInput = $("frequency");
+      const contrastInput = $("contrast");
+      const opacityInput = $("opacity");
+      const blurInput = $("blur");
+      const intensityInput = $("intensity");
+      const blendModeInput = $("blendMode");
+      const seedRangeInput = $("seedRange");
+      const seedNumberInput = $("seedNumber");
+      const copyCssButton = $("copyCss");
+      const status = $("status");
+      const preview = $("preview");
+      const styleTag = document.createElement("style");
+      document.head.appendChild(styleTag);
+
+      const presetNames = Object.keys(presets);
+      presetSelect.innerHTML = presetNames.map((name) => `<option value="${name}">${name}</option>`).join("");
+
+      const state = {
+        colors: [...presets["Aurora Citrus"].colors],
+        baseColor: presets["Aurora Citrus"].baseColor,
+        frequency: 1.25,
+        contrast: 1.7,
+        opacity: 0.34,
+        blur: 24,
+        intensity: 1,
+        seed: 1,
+        blendMode: "overlay",
+      };
+
+      const format = (value, digits = 2) => Number(value).toFixed(digits).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
+
+      function syncLabels() {
+        $("frequency-value").textContent = format(state.frequency);
+        $("contrast-value").textContent = format(state.contrast);
+        $("opacity-value").textContent = format(state.opacity, 2);
+        $("blur-value").textContent = `${state.blur}px`;
+        $("intensity-value").textContent = format(state.intensity);
+        $("seed-value").textContent = String(state.seed);
+      }
+
+      function syncInputs() {
+        colorInputs.forEach((input, index) => (input.value = state.colors[index]));
+        baseColorInput.value = state.baseColor;
+        frequencyInput.value = String(state.frequency);
+        contrastInput.value = String(state.contrast);
+        opacityInput.value = String(state.opacity);
+        blurInput.value = String(state.blur);
+        intensityInput.value = String(state.intensity);
+        seedRangeInput.value = String(state.seed);
+        seedNumberInput.value = String(state.seed);
+        blendModeInput.value = state.blendMode;
+      }
+
+      function render() {
+        const css = createGrainGradientCSS({
+          selector: "#preview",
+          colors: state.colors,
+          baseColor: state.baseColor,
+          frequency: state.frequency,
+          contrast: state.contrast,
+          opacity: state.opacity,
+          blur: state.blur,
+          intensity: state.intensity,
+          seed: state.seed,
+          blendMode: state.blendMode,
+        });
+
+        styleTag.textContent = css;
+        syncLabels();
+        preview.setAttribute("data-preset", presetSelect.value);
+        return css;
+      }
+
+      function applyPreset(name) {
+        const preset = presets[name];
+        state.colors = [...preset.colors];
+        state.baseColor = preset.baseColor;
+        syncInputs();
+        render();
+      }
+
+      presetSelect.value = "Aurora Citrus";
+      syncInputs();
+      render();
+
+      presetSelect.addEventListener("change", (event) => applyPreset(event.target.value));
+
+      colorInputs.forEach((input, index) => {
+        input.addEventListener("input", (event) => {
+          state.colors[index] = event.target.value;
+          render();
+        });
+      });
+
+      baseColorInput.addEventListener("input", (event) => {
+        state.baseColor = event.target.value;
+        render();
+      });
+
+      frequencyInput.addEventListener("input", (event) => {
+        state.frequency = Number(event.target.value);
+        render();
+      });
+
+      contrastInput.addEventListener("input", (event) => {
+        state.contrast = Number(event.target.value);
+        render();
+      });
+
+      opacityInput.addEventListener("input", (event) => {
+        state.opacity = Number(event.target.value);
+        render();
+      });
+
+      blurInput.addEventListener("input", (event) => {
+        state.blur = Number(event.target.value);
+        render();
+      });
+
+      intensityInput.addEventListener("input", (event) => {
+        state.intensity = Number(event.target.value);
+        render();
+      });
+
+      blendModeInput.addEventListener("change", (event) => {
+        state.blendMode = event.target.value;
+        render();
+      });
+
+      const syncSeed = (value) => {
+        const next = Math.min(9999, Math.max(0, Math.round(Number(value) || 0)));
+        state.seed = next;
+        seedRangeInput.value = String(next);
+        seedNumberInput.value = String(next);
+        render();
+      };
+
+      seedRangeInput.addEventListener("input", (event) => syncSeed(event.target.value));
+      seedNumberInput.addEventListener("input", (event) => syncSeed(event.target.value));
+
+      copyCssButton.addEventListener("click", async () => {
+        const css = render();
+        try {
+          await navigator.clipboard.writeText(css);
+          status.textContent = "CSS copied";
+        } catch {
+          status.textContent = "Copy blocked by browser";
+        }
+        window.setTimeout(() => {
+          status.textContent = "";
+        }, 1800);
+      });
+    </script>
+  </body>
+</html>

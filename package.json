@@ -38,7 +38,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "pretest": "npm run build",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "playground": "npm run build && node playground/server.mjs"
   },
   "peerDependencies": {
     "react": ">=18"
