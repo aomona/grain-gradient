@@ -4,6 +4,12 @@ Lightweight TypeScript helpers for mesh + grain gradients.
 
 ![grain-gradient playground screenshot](https://raw.githubusercontent.com/aomona/grain-gradient/main/screenshot.png)
 
+## Installation
+
+```bash
+npm i grain-gradient
+```
+
 ## Core CSS
 
 ```ts
