@@ -4,114 +4,77 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>grain-gradient playground</title>
-    <meta
-      name="description"
-      content="Tune grain-gradient presets locally with a fast, dependency-free playground."
-    />
+    <meta name="description" content="Tune grain-gradient presets locally with a fast, dependency-free playground." />
     <style>
       :root {
         color-scheme: dark;
-        --bg: #07090f;
-        --panel: rgba(13, 18, 32, 0.78);
-        --panel-strong: rgba(16, 22, 40, 0.92);
-        --line: rgba(255, 255, 255, 0.12);
-        --line-strong: rgba(255, 255, 255, 0.18);
-        --text: rgba(246, 247, 255, 0.96);
-        --muted: rgba(214, 220, 255, 0.64);
-        --accent: #8de4ff;
-        --accent-strong: #d7ff8b;
-        --shadow: 0 30px 90px rgba(0, 0, 0, 0.42);
-        --radius: 24px;
+        --bg: #070708;
+        --sidebar: #0f0f10;
+        --panel: #151518;
+        --panel-2: #111113;
+        --line: #27272a;
+        --line-strong: #3f3f46;
+        --text: #f4f4f5;
+        --muted: #a1a1aa;
+        --accent: #e4e4e7;
+        --accent-soft: rgba(228, 228, 231, 0.12);
+        --danger: #fca5a5;
       }
 
-      * {
-        box-sizing: border-box;
-      }
+      * { box-sizing: border-box; }
 
-      html,
-      body {
-        height: 100%;
-      }
+      html, body { height: 100%; }
 
       body {
         margin: 0;
-        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: var(--bg);
         color: var(--text);
-        background:
-          radial-gradient(circle at top left, rgba(141, 228, 255, 0.14), transparent 36%),
-          radial-gradient(circle at 85% 15%, rgba(215, 255, 139, 0.1), transparent 32%),
-          linear-gradient(180deg, #090b12, #07090f 58%, #05070b);
-      }
-
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        pointer-events: none;
-        background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-        background-size: 28px 28px;
-        mask-image: radial-gradient(circle at center, black, transparent 92%);
-        opacity: 0.42;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
 
       .app {
         min-height: 100vh;
         display: grid;
-        grid-template-columns: minmax(320px, 390px) 1fr;
-        gap: 20px;
-        padding: 20px;
-      }
-
-      .sidebar,
-      .preview-shell {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        box-shadow: var(--shadow);
-        backdrop-filter: blur(18px);
+        grid-template-columns: 340px minmax(0, 1fr);
+        overflow: hidden;
       }
 
       .sidebar {
-        border-radius: 30px;
-        padding: 22px;
-        display: flex;
-        flex-direction: column;
-        gap: 18px;
+        background: var(--sidebar);
+        border-right: 1px solid var(--line);
+        padding: 18px 16px;
+        overflow: auto;
       }
 
-      .eyebrow {
-        margin: 0;
-        color: var(--accent);
-        font-size: 0.75rem;
-        letter-spacing: 0.22em;
-        text-transform: uppercase;
+      .brand {
+        margin: 0 0 18px;
       }
 
-      h1 {
-        margin: 10px 0 8px;
-        font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-        font-size: clamp(2rem, 3.8vw, 3.1rem);
-        line-height: 0.95;
-        letter-spacing: -0.04em;
+      .brand h1 {
+        margin: 0 0 6px;
+        font-size: 1rem;
+        line-height: 1.2;
+        font-weight: 600;
+        letter-spacing: -0.02em;
       }
 
-      .lede {
+      .brand p {
         margin: 0;
         color: var(--muted);
-        line-height: 1.5;
-        max-width: 34ch;
+        font-size: 0.82rem;
+        line-height: 1.45;
       }
 
-      .panel {
-        border: 1px solid var(--line);
-        border-radius: 22px;
-        padding: 16px;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
-      }
-
-      .panel-grid {
+      .controls {
         display: grid;
         gap: 12px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        border-radius: 14px;
+        padding: 12px;
       }
 
       .field {
@@ -119,48 +82,49 @@
         gap: 8px;
       }
 
-      .row {
-        display: grid;
-        gap: 10px;
-        grid-template-columns: 1fr auto;
+      .field + .field { margin-top: 10px; }
+
+      .label-row {
+        display: flex;
         align-items: center;
+        justify-content: space-between;
+        gap: 10px;
       }
 
       label {
-        font-size: 0.82rem;
+        font-size: 0.78rem;
+        color: var(--text);
         letter-spacing: 0.02em;
-        color: rgba(236, 240, 255, 0.86);
       }
 
       .value {
         color: var(--muted);
+        font-size: 0.78rem;
         font-variant-numeric: tabular-nums;
-        font-size: 0.82rem;
       }
 
-      input,
       select,
+      input,
       button {
         font: inherit;
       }
 
       select,
-      input[type="number"],
-      input[type="text"] {
+      input[type="number"] {
         width: 100%;
-        border-radius: 14px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        background: rgba(4, 7, 16, 0.78);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel-2);
         color: var(--text);
         padding: 10px 12px;
         outline: none;
       }
 
-      select:focus,
-      input:focus,
+      select:focus-visible,
+      input:focus-visible,
       button:focus-visible {
-        border-color: rgba(141, 228, 255, 0.65);
-        box-shadow: 0 0 0 4px rgba(141, 228, 255, 0.12);
+        border-color: var(--line-strong);
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
       }
 
       input[type="range"] {
@@ -168,415 +132,509 @@
         accent-color: var(--accent);
       }
 
+      input[type="color"] {
+        width: 100%;
+        height: 36px;
+        padding: 0;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel-2);
+      }
+
       .colors {
         display: grid;
-        gap: 10px;
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
       }
 
       .color-field {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        padding: 10px 12px;
-        border-radius: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(4, 7, 16, 0.64);
-      }
-
-      input[type="color"] {
-        width: 38px;
-        height: 38px;
-        padding: 0;
-        border: 0;
-        background: transparent;
-        border-radius: 12px;
-      }
-
-      .color-field span {
-        flex: 1;
-        font-size: 0.82rem;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.14em;
+        display: grid;
+        gap: 6px;
       }
 
       .seed-grid {
         display: grid;
-        grid-template-columns: 1fr 88px;
-        gap: 10px;
-        align-items: center;
+        gap: 8px;
+        grid-template-columns: 1fr 92px;
       }
 
-      .actions {
+      .button-row {
         display: flex;
-        gap: 10px;
+        gap: 8px;
         align-items: center;
+        flex-wrap: wrap;
       }
 
       button {
-        appearance: none;
-        border: 1px solid rgba(141, 228, 255, 0.3);
-        background: linear-gradient(180deg, rgba(141, 228, 255, 0.18), rgba(141, 228, 255, 0.08));
-        color: var(--text);
-        padding: 11px 14px;
-        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: #e5e7eb;
+        color: #09090b;
+        border-radius: 10px;
+        padding: 10px 12px;
         cursor: pointer;
-        transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+        transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
       }
 
-      button:hover {
-        transform: translateY(-1px);
-        border-color: rgba(141, 228, 255, 0.6);
+      button:hover { transform: translateY(-1px); background: #ffffff; }
+
+      button.secondary {
+        background: transparent;
+        color: var(--text);
       }
 
-      .status {
-        color: var(--muted);
-        font-size: 0.82rem;
+      button.secondary:hover { background: var(--accent-soft); }
+
+      button:disabled,
+      input:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
       }
 
-      .preview-shell {
-        border-radius: 30px;
-        padding: 18px;
+      .feedback {
+        border: 1px solid var(--line);
+        background: #101012;
+        border-radius: 12px;
+        padding: 10px 12px;
         display: grid;
-        gap: 14px;
-        min-width: 0;
+        gap: 6px;
       }
 
-      .preview-head {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 16px;
+      .feedback strong {
+        font-size: 0.78rem;
+        font-weight: 600;
       }
 
-      .preview-head h2 {
+      .feedback p,
+      .feedback pre {
         margin: 0;
-        font-size: 0.92rem;
-        color: rgba(248, 249, 255, 0.92);
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-      }
-
-      .preview-head p {
-        margin: 0;
+        font-size: 0.78rem;
+        line-height: 1.45;
         color: var(--muted);
-        font-size: 0.84rem;
+        white-space: pre-wrap;
+        word-break: break-word;
       }
 
-      .preview-frame {
+      .feedback[data-state="error"] {
+        border-color: rgba(252, 165, 165, 0.35);
+      }
+
+      .feedback[data-state="error"] p,
+      .feedback[data-state="error"] pre {
+        color: var(--danger);
+      }
+
+      .preview {
         position: relative;
-        min-height: min(82vh, 960px);
-        border-radius: 26px;
+        min-height: 100vh;
         overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        background: #0b1020;
+        background: #050505;
       }
 
-      #preview {
+      #meshLayer,
+      #grainLayer {
         position: absolute;
         inset: 0;
-        border-radius: inherit;
-        isolation: isolate;
+        pointer-events: none;
       }
 
-      @media (max-width: 1080px) {
-        .app {
-          grid-template-columns: 1fr;
-        }
-
-        .preview-frame {
-          min-height: 68vh;
-        }
+      #meshLayer {
+        transform-origin: 50% 50%;
+        will-change: transform, background-image, background-position, background-size, filter;
+        background-color: #0b0b0c;
+        background-image:
+          radial-gradient(circle at 12% 18%, #c2e812 0, transparent 34%),
+          radial-gradient(circle at 86% 16%, #ff7f11 0, transparent 32%),
+          radial-gradient(circle at 70% 82%, #ee4266 0, transparent 36%),
+          radial-gradient(circle at 20% 88%, #2a1e5c 0, transparent 32%),
+          linear-gradient(135deg, #c2e812, #ff7f11, #ee4266, #2a1e5c, #0f1020);
+        background-size: 120% 120%;
+        background-position: center;
+        filter: blur(36px) saturate(1.2);
+        transform: scale(1.12);
       }
 
-      @media (max-width: 640px) {
-        .app {
-          padding: 12px;
-          gap: 12px;
-        }
+      #grainLayer {
+        mix-blend-mode: overlay;
+        opacity: 0.34;
+        background-repeat: no-repeat;
+        background-size: 100% 100%;
+        background-position: center;
+        will-change: background-image, opacity, mix-blend-mode;
+      }
 
-        .sidebar,
-        .preview-shell {
-          border-radius: 24px;
-          padding: 16px;
-        }
+      .preview-fallback {
+        position: absolute;
+        inset: 0;
+        background: #0b0b0c;
+      }
 
-        .colors,
-        .seed-grid {
-          grid-template-columns: 1fr;
-        }
+      @media (max-width: 940px) {
+        .app { grid-template-columns: 1fr; }
+        .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
+        .preview { min-height: 68vh; }
+      }
 
-        .preview-frame {
-          min-height: 58vh;
-        }
+      @media (max-width: 560px) {
+        .sidebar { padding: 14px; }
+        .colors, .seed-grid { grid-template-columns: 1fr; }
       }
     </style>
   </head>
   <body>
-    <main class="app">
+    <div class="app">
       <aside class="sidebar">
-        <div>
-          <p class="eyebrow">grain-gradient playground</p>
-          <h1>Tune the atmosphere.</h1>
-          <p class="lede">
-            Pick a preset, push the grain, and copy a ready-to-use CSS snippet straight from the
-            library build.
-          </p>
+        <div class="brand">
+          <h1>grain-gradient playground</h1>
+          <p>Static preview for mesh + SVG grain. Copy export CSS when ready.</p>
         </div>
 
-        <section class="panel panel-grid" aria-label="Gradient controls">
+        <section class="controls card" aria-label="Gradient controls">
           <div class="field">
-            <div class="row">
+            <div class="label-row">
               <label for="preset">Preset</label>
             </div>
             <select id="preset"></select>
           </div>
 
           <div class="field">
-            <div class="row">
+            <div class="label-row">
               <label>Colors</label>
-              <span class="value">4 stops</span>
+              <span class="value">4</span>
             </div>
             <div class="colors">
-              <label class="color-field"><span>Color 1</span><input id="color-1" type="color" aria-label="Color 1" /></label>
-              <label class="color-field"><span>Color 2</span><input id="color-2" type="color" aria-label="Color 2" /></label>
-              <label class="color-field"><span>Color 3</span><input id="color-3" type="color" aria-label="Color 3" /></label>
-              <label class="color-field"><span>Color 4</span><input id="color-4" type="color" aria-label="Color 4" /></label>
+              <label class="color-field"><span class="value">Color 1</span><input id="color-1" type="color" aria-label="Color 1" /></label>
+              <label class="color-field"><span class="value">Color 2</span><input id="color-2" type="color" aria-label="Color 2" /></label>
+              <label class="color-field"><span class="value">Color 3</span><input id="color-3" type="color" aria-label="Color 3" /></label>
+              <label class="color-field"><span class="value">Color 4</span><input id="color-4" type="color" aria-label="Color 4" /></label>
             </div>
           </div>
 
           <div class="field">
-            <div class="row">
-              <label for="baseColor">Base color</label>
+            <div class="label-row">
+              <label for="distortion">Distortion</label>
+              <span class="value" id="distortion-value"></span>
             </div>
-            <input id="baseColor" type="color" />
+            <input id="distortion" type="range" min="0" max="100" step="1" />
           </div>
 
           <div class="field">
-            <div class="row"><label for="frequency">Frequency</label><span class="value" id="frequency-value"></span></div>
+            <div class="label-row">
+              <label for="swirl">Swirl</label>
+              <span class="value" id="swirl-value"></span>
+            </div>
+            <input id="swirl" type="range" min="0" max="100" step="1" />
+          </div>
+
+          <div class="field">
+            <div class="label-row">
+              <label for="motionSpeed">Motion speed</label>
+              <span class="value" id="motionSpeed-value">CSS static</span>
+            </div>
+            <input id="motionSpeed" type="range" min="0" max="100" step="1" value="0" disabled />
+          </div>
+
+          <div class="field">
+            <div class="label-row">
+              <label for="grainOpacity">SVG grain</label>
+              <span class="value" id="grainOpacity-value"></span>
+            </div>
+            <input id="grainOpacity" type="range" min="0" max="1" step="0.01" />
+          </div>
+
+          <div class="field">
+            <div class="label-row">
+              <label for="frequency">SVG frequency</label>
+              <span class="value" id="frequency-value"></span>
+            </div>
             <input id="frequency" type="range" min="0.35" max="2.4" step="0.01" />
           </div>
 
           <div class="field">
-            <div class="row"><label for="contrast">Contrast</label><span class="value" id="contrast-value"></span></div>
+            <div class="label-row">
+              <label for="contrast">SVG contrast</label>
+              <span class="value" id="contrast-value"></span>
+            </div>
             <input id="contrast" type="range" min="1" max="2.5" step="0.01" />
           </div>
 
           <div class="field">
-            <div class="row"><label for="opacity">Opacity</label><span class="value" id="opacity-value"></span></div>
-            <input id="opacity" type="range" min="0" max="0.85" step="0.01" />
-          </div>
-
-          <div class="field">
-            <div class="row"><label for="blur">Blur</label><span class="value" id="blur-value"></span></div>
-            <input id="blur" type="range" min="0" max="80" step="1" />
-          </div>
-
-          <div class="field">
-            <div class="row"><label for="intensity">Intensity / saturation</label><span class="value" id="intensity-value"></span></div>
-            <input id="intensity" type="range" min="0.2" max="2.5" step="0.01" />
-          </div>
-
-          <div class="field">
-            <div class="row"><label for="blendMode">Blend mode</label></div>
+            <div class="label-row">
+              <label for="blendMode">Blend mode</label>
+            </div>
             <select id="blendMode">
               <option value="overlay">overlay</option>
               <option value="soft-light">soft-light</option>
-              <option value="multiply">multiply</option>
               <option value="screen">screen</option>
+              <option value="multiply">multiply</option>
               <option value="normal">normal</option>
             </select>
           </div>
 
           <div class="field">
-            <div class="row"><label for="seedRange">Seed</label><span class="value" id="seed-value"></span></div>
+            <div class="label-row">
+              <label for="seedRange">Seed</label>
+              <span class="value" id="seed-value"></span>
+            </div>
             <div class="seed-grid">
               <input id="seedRange" type="range" min="0" max="9999" step="1" />
               <input id="seedNumber" type="number" min="0" max="9999" step="1" />
             </div>
           </div>
 
-          <div class="actions">
+          <div class="button-row">
             <button id="copyCss" type="button">Copy CSS</button>
-            <span class="status" id="status" aria-live="polite"></span>
+            <button id="reset" class="secondary" type="button">Reset preset</button>
+          </div>
+
+          <div class="feedback" id="feedback" data-state="ready" aria-live="polite">
+            <strong id="feedback-title">Ready</strong>
+            <p id="feedback-text">Preview is live.</p>
+            <pre id="feedback-error" hidden></pre>
           </div>
         </section>
       </aside>
 
-      <section class="preview-shell">
-        <div class="preview-head">
-          <div>
-            <h2>Live preview</h2>
-            <p>Pure background only — no text, no framing, no hero content.</p>
-          </div>
-          <p>Updated from dist/index.js</p>
-        </div>
-        <div class="preview-frame" aria-label="Gradient preview">
-          <div id="preview"></div>
-        </div>
-      </section>
-    </main>
+      <main class="preview" aria-label="Live background preview">
+        <div id="meshLayer"></div>
+        <div id="grainLayer"></div>
+      </main>
+    </div>
 
     <script type="module">
-      import { createGrainGradientCSS, presets } from "../dist/index.js";
-
       const $ = (id) => document.getElementById(id);
 
-      const presetSelect = $("preset");
-      const colorInputs = [$("color-1"), $("color-2"), $("color-3"), $("color-4")];
-      const baseColorInput = $("baseColor");
-      const frequencyInput = $("frequency");
-      const contrastInput = $("contrast");
-      const opacityInput = $("opacity");
-      const blurInput = $("blur");
-      const intensityInput = $("intensity");
-      const blendModeInput = $("blendMode");
-      const seedRangeInput = $("seedRange");
-      const seedNumberInput = $("seedNumber");
-      const copyCssButton = $("copyCss");
-      const status = $("status");
-      const preview = $("preview");
-      const styleTag = document.createElement("style");
-      document.head.appendChild(styleTag);
+      const elements = {
+        preset: $("preset"),
+        colors: [$("color-1"), $("color-2"), $("color-3"), $("color-4")],
+        distortion: $("distortion"),
+        swirl: $("swirl"),
+        motionSpeed: $("motionSpeed"),
+        grainOpacity: $("grainOpacity"),
+        frequency: $("frequency"),
+        contrast: $("contrast"),
+        blendMode: $("blendMode"),
+        seedRange: $("seedRange"),
+        seedNumber: $("seedNumber"),
+        copyCss: $("copyCss"),
+        reset: $("reset"),
+        feedback: $("feedback"),
+        feedbackTitle: $("feedback-title"),
+        feedbackText: $("feedback-text"),
+        feedbackError: $("feedback-error"),
+        distortionValue: $("distortion-value"),
+        swirlValue: $("swirl-value"),
+        grainOpacityValue: $("grainOpacity-value"),
+        frequencyValue: $("frequency-value"),
+        contrastValue: $("contrast-value"),
+        seedValue: $("seed-value"),
+        meshLayer: $("meshLayer"),
+        grainLayer: $("grainLayer"),
+      };
+
+      const format = (value, digits = 2) => {
+        const next = Number(value).toFixed(digits);
+        return next.replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
+      };
+
+      const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+      const setFeedback = (state, title, text, error = "") => {
+        elements.feedback.dataset.state = state;
+        elements.feedbackTitle.textContent = title;
+        elements.feedbackText.textContent = text;
+        elements.feedbackError.hidden = !error;
+        elements.feedbackError.textContent = error;
+      };
+
+      let api;
+
+      try {
+        api = await import("../dist/index.js");
+      } catch (error) {
+        setFeedback("error", "Import failed", "Could not load ../dist/index.js.", error?.stack || String(error));
+        throw error;
+      }
+
+      const { createMeshGradient, createTurbulenceNoise, createGrainGradientCSS, presets } = api;
 
       const presetNames = Object.keys(presets);
-      presetSelect.innerHTML = presetNames.map((name) => `<option value="${name}">${name}</option>`).join("");
+      elements.preset.innerHTML = presetNames.map((name) => `<option value="${name}">${name}</option>`).join("");
+
+      const initialPreset = "Aurora Citrus";
+      const initial = presets[initialPreset];
 
       const state = {
-        colors: [...presets["Aurora Citrus"].colors],
-        baseColor: presets["Aurora Citrus"].baseColor,
+        preset: initialPreset,
+        colors: [...initial.colors],
+        baseColor: initial.baseColor,
+        distortion: 44,
+        swirl: 30,
+        grainOpacity: 0.34,
         frequency: 1.25,
         contrast: 1.7,
-        opacity: 0.34,
-        blur: 24,
-        intensity: 1,
         seed: 1,
         blendMode: "overlay",
       };
 
-      const format = (value, digits = 2) => Number(value).toFixed(digits).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
+      const syncInputs = () => {
+        elements.preset.value = state.preset;
+        elements.colors.forEach((input, index) => { input.value = state.colors[index]; });
+        elements.distortion.value = String(state.distortion);
+        elements.swirl.value = String(state.swirl);
+        elements.grainOpacity.value = String(state.grainOpacity);
+        elements.frequency.value = String(state.frequency);
+        elements.contrast.value = String(state.contrast);
+        elements.seedRange.value = String(state.seed);
+        elements.seedNumber.value = String(state.seed);
+        elements.blendMode.value = state.blendMode;
+      };
 
-      function syncLabels() {
-        $("frequency-value").textContent = format(state.frequency);
-        $("contrast-value").textContent = format(state.contrast);
-        $("opacity-value").textContent = format(state.opacity, 2);
-        $("blur-value").textContent = `${state.blur}px`;
-        $("intensity-value").textContent = format(state.intensity);
-        $("seed-value").textContent = String(state.seed);
-      }
+      const syncLabels = () => {
+        elements.distortionValue.textContent = `${state.distortion}`;
+        elements.swirlValue.textContent = `${state.swirl}`;
+        elements.grainOpacityValue.textContent = format(state.grainOpacity, 2);
+        elements.frequencyValue.textContent = format(state.frequency, 2);
+        elements.contrastValue.textContent = format(state.contrast, 2);
+        elements.seedValue.textContent = String(state.seed);
+      };
 
-      function syncInputs() {
-        colorInputs.forEach((input, index) => (input.value = state.colors[index]));
-        baseColorInput.value = state.baseColor;
-        frequencyInput.value = String(state.frequency);
-        contrastInput.value = String(state.contrast);
-        opacityInput.value = String(state.opacity);
-        blurInput.value = String(state.blur);
-        intensityInput.value = String(state.intensity);
-        seedRangeInput.value = String(state.seed);
-        seedNumberInput.value = String(state.seed);
-        blendModeInput.value = state.blendMode;
-      }
-
-      function render() {
-        const css = createGrainGradientCSS({
-          selector: "#preview",
-          colors: state.colors,
-          baseColor: state.baseColor,
-          frequency: state.frequency,
-          contrast: state.contrast,
-          opacity: state.opacity,
-          blur: state.blur,
-          intensity: state.intensity,
-          seed: state.seed,
-          blendMode: state.blendMode,
-        });
-
-        styleTag.textContent = css;
-        syncLabels();
-        preview.setAttribute("data-preset", presetSelect.value);
-        return css;
-      }
-
-      function applyPreset(name) {
+      const applyPreset = (name) => {
         const preset = presets[name];
+        if (!preset) return;
+        state.preset = name;
         state.colors = [...preset.colors];
         state.baseColor = preset.baseColor;
         syncInputs();
         render();
-      }
+      };
 
-      presetSelect.value = "Aurora Citrus";
+      const syncSeed = (value) => {
+        const next = clamp(Math.round(Number(value) || 0), 0, 9999);
+        state.seed = next;
+        elements.seedRange.value = String(next);
+        elements.seedNumber.value = String(next);
+        render();
+      };
+
+      const render = () => {
+        try {
+          const meshBackground = createMeshGradient({
+            colors: state.colors,
+            baseColor: state.baseColor,
+            blur: 8 + state.distortion * 0.65,
+            intensity: 1.05 + state.distortion / 110,
+            saturation: 1 + state.distortion / 160,
+          });
+
+          const swirlShift = state.swirl / 100;
+          const swirlScale = 1 + state.swirl * 0.004;
+
+          elements.meshLayer.style.backgroundImage = meshBackground;
+          elements.meshLayer.style.backgroundRepeat = "no-repeat";
+          elements.meshLayer.style.backgroundSize = `${118 + state.swirl * 0.55}% ${118 + state.swirl * 0.4}%`;
+          elements.meshLayer.style.backgroundPosition = `${50 + swirlShift * 12}% ${50 - swirlShift * 10}%`;
+          elements.meshLayer.style.filter = `blur(${state.distortion * 0.75}px) saturate(${1.05 + state.distortion / 160}) contrast(${1 + state.distortion / 260})`;
+          elements.meshLayer.style.transform = `scale(${swirlScale}) rotate(${state.swirl * 0.12}deg)`;
+
+          elements.grainLayer.style.backgroundImage = createTurbulenceNoise({
+            seed: state.seed,
+            frequency: state.frequency,
+            contrast: state.contrast,
+          });
+          elements.grainLayer.style.opacity = String(state.grainOpacity);
+          elements.grainLayer.style.mixBlendMode = state.blendMode;
+
+          syncLabels();
+          setFeedback("ready", "Ready", "Preview is live.");
+        } catch (error) {
+          elements.meshLayer.style.backgroundImage = "none";
+          elements.meshLayer.style.filter = "none";
+          elements.meshLayer.style.transform = "none";
+          elements.grainLayer.style.backgroundImage = "none";
+          setFeedback("error", "Render failed", "The preview could not be rendered.", error?.stack || String(error));
+        }
+      };
+
       syncInputs();
       render();
 
-      presetSelect.addEventListener("change", (event) => applyPreset(event.target.value));
+      elements.preset.addEventListener("change", (event) => applyPreset(event.target.value));
 
-      colorInputs.forEach((input, index) => {
+      elements.colors.forEach((input, index) => {
         input.addEventListener("input", (event) => {
           state.colors[index] = event.target.value;
           render();
         });
       });
 
-      baseColorInput.addEventListener("input", (event) => {
-        state.baseColor = event.target.value;
+      elements.distortion.addEventListener("input", (event) => {
+        state.distortion = Number(event.target.value);
         render();
       });
 
-      frequencyInput.addEventListener("input", (event) => {
+      elements.swirl.addEventListener("input", (event) => {
+        state.swirl = Number(event.target.value);
+        render();
+      });
+
+      elements.grainOpacity.addEventListener("input", (event) => {
+        state.grainOpacity = Number(event.target.value);
+        render();
+      });
+
+      elements.frequency.addEventListener("input", (event) => {
         state.frequency = Number(event.target.value);
         render();
       });
 
-      contrastInput.addEventListener("input", (event) => {
+      elements.contrast.addEventListener("input", (event) => {
         state.contrast = Number(event.target.value);
         render();
       });
 
-      opacityInput.addEventListener("input", (event) => {
-        state.opacity = Number(event.target.value);
-        render();
-      });
-
-      blurInput.addEventListener("input", (event) => {
-        state.blur = Number(event.target.value);
-        render();
-      });
-
-      intensityInput.addEventListener("input", (event) => {
-        state.intensity = Number(event.target.value);
-        render();
-      });
-
-      blendModeInput.addEventListener("change", (event) => {
+      elements.blendMode.addEventListener("change", (event) => {
         state.blendMode = event.target.value;
         render();
       });
 
-      const syncSeed = (value) => {
-        const next = Math.min(9999, Math.max(0, Math.round(Number(value) || 0)));
-        state.seed = next;
-        seedRangeInput.value = String(next);
-        seedNumberInput.value = String(next);
+      elements.seedRange.addEventListener("input", (event) => syncSeed(event.target.value));
+      elements.seedNumber.addEventListener("input", (event) => syncSeed(event.target.value));
+
+      elements.reset.addEventListener("click", () => {
+        applyPreset(initialPreset);
+        state.distortion = 44;
+        state.swirl = 30;
+        state.grainOpacity = 0.34;
+        state.frequency = 1.25;
+        state.contrast = 1.7;
+        state.seed = 1;
+        state.blendMode = "overlay";
+        syncInputs();
         render();
-      };
+      });
 
-      seedRangeInput.addEventListener("input", (event) => syncSeed(event.target.value));
-      seedNumberInput.addEventListener("input", (event) => syncSeed(event.target.value));
-
-      copyCssButton.addEventListener("click", async () => {
-        const css = render();
+      elements.copyCss.addEventListener("click", async () => {
         try {
+          const css = createGrainGradientCSS({
+            selector: ".grain-gradient",
+            colors: state.colors,
+            baseColor: state.baseColor,
+            blur: 8 + state.distortion * 0.65,
+            intensity: 1.05 + state.distortion / 110,
+            saturation: 1 + state.distortion / 160,
+            seed: state.seed,
+            frequency: state.frequency,
+            contrast: state.contrast,
+            opacity: state.grainOpacity,
+            blendMode: state.blendMode,
+          });
+
           await navigator.clipboard.writeText(css);
-          status.textContent = "CSS copied";
-        } catch {
-          status.textContent = "Copy blocked by browser";
+          setFeedback("ready", "Copied", "Export CSS copied to clipboard.");
+          window.setTimeout(() => setFeedback("ready", "Ready", "Preview is live."), 1400);
+        } catch (error) {
+          setFeedback("error", "Copy failed", "The browser blocked clipboard access.", error?.stack || String(error));
         }
-        window.setTimeout(() => {
-          status.textContent = "";
-        }, 1800);
       });
     </script>
   </body>

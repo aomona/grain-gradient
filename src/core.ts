@@ -23,6 +23,7 @@ export interface MeshGradientOptions {
   baseColor?: string;
   intensity?: number;
   blur?: number;
+  saturation?: number;
 }
 
 export interface GrainGradientCSSOptions extends MeshGradientOptions, TurbulenceNoiseOptions {
@@ -52,15 +53,15 @@ export function createTurbulenceNoise(options: TurbulenceNoiseOptions = {}): str
 export function createMeshGradient(options: MeshGradientOptions = {}): string {
   const colors = options.colors?.length ? options.colors : ["#7c3aed", "#06b6d4", "#f97316", "#f43f5e"];
   const baseColor = options.baseColor ?? "#0b1020";
-  const intensity = clamp(options.intensity ?? 1, 0.2, 2.5);
   const stops = colors.slice(0, 6);
-  const positions = ["12% 18%", "82% 22%", "28% 78%", "74% 72%", "50% 46%", "18% 56%"];
+  const positions = ["12% 18%", "86% 16%", "70% 82%", "20% 88%", "50% 46%", "18% 56%"];
+  const sizes = [34, 32, 36, 32, 30, 28];
   const layers = stops.map((color, index) => {
     const pos = positions[index] ?? positions[positions.length - 1];
-    const alpha = Math.round(65 * intensity);
-    return `radial-gradient(circle at ${pos}, color-mix(in srgb, ${color} ${alpha}%, transparent) 0%, transparent 58%)`;
+    const size = sizes[index] ?? sizes[sizes.length - 1];
+    return `radial-gradient(circle at ${pos}, ${color} 0, transparent ${size}%)`;
   });
-  return `${layers.join(", ")}, linear-gradient(135deg, ${baseColor}, ${baseColor})`;
+  return `${layers.join(", ")}, linear-gradient(135deg, ${stops.join(", ")}, ${baseColor})`;
 }
 
 export function createGrainGradientCSS(options: GrainGradientCSSOptions = {}): string {
@@ -77,9 +78,10 @@ ${selector}::before {
   position: absolute;
   inset: 0;
   background-image: ${createMeshGradient(options)};
-  background-size: cover;
+  background-size: 100% 100%;
   background-repeat: no-repeat;
-  filter: blur(${clamp(options.blur ?? 24, 0, 80)}px) saturate(${clamp(options.intensity ?? 1, 0.2, 2.5)});
+  filter: blur(${clamp(options.blur ?? 42, 0, 80)}px) saturate(${clamp(options.saturation ?? options.intensity ?? 1.18, 0.2, 2.5)});
+  transform: scale(1.12);
   z-index: 0;
 }
 

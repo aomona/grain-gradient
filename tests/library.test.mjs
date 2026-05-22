@@ -19,6 +19,7 @@ test('creates mesh gradient string', () => {
   const mesh = createMeshGradient();
   assert.ok(mesh.includes('radial-gradient'));
   assert.ok(!mesh.includes('background-image:'));
+  assert.ok(!mesh.includes('color-mix'));
   assert.ok(mesh.includes('linear-gradient'));
 });
 
