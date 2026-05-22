@@ -3,6 +3,22 @@
   "version": "0.1.0",
   "description": "Lightweight TypeScript utilities for mesh and grain gradients.",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aomona/grain-gradient.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aomona/grain-gradient/issues"
+  },
+  "homepage": "https://github.com/aomona/grain-gradient#readme",
+  "keywords": [
+    "gradient",
+    "grain",
+    "svg",
+    "background",
+    "react"
+  ],
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
