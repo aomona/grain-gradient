@@ -22,6 +22,8 @@ const css = createGrainGradientCSS(presets['Aurora Citrus']);
 
 `grain-gradient` has no runtime dependencies. The core entry does not import React.
 
+See [API reference](./docs/API.md) for all core functions, React helpers, options, and presets.
+
 ## React
 
 ```tsx
