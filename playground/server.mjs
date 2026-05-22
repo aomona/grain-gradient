@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const port = 4173;
+const preferredPort = Number.parseInt(process.env.PORT ?? "4173", 10);
 const root = fileURLToPath(new URL("..", import.meta.url));
 
 const mimeTypes = new Map([
@@ -27,8 +27,8 @@ const resolvePath = (requestPath) => {
   return resolved.startsWith(root) ? resolved : null;
 };
 
-const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url ?? "/", `http://${req.headers.host ?? `localhost:${port}`}`);
+const createPlaygroundServer = () => http.createServer(async (req, res) => {
+  const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
   let pathname = url.pathname;
 
   if (pathname === "/") {
@@ -66,6 +66,24 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(port, () => {
-  console.log(`grain-gradient playground ready at http://localhost:${port}/playground/`);
-});
+const listen = (port, attemptsLeft = 10) => {
+  const server = createPlaygroundServer();
+
+  server.once("error", (error) => {
+    if (error.code === "EADDRINUSE" && attemptsLeft > 0) {
+      console.warn(`Port ${port} is in use, trying ${port + 1}...`);
+      listen(port + 1, attemptsLeft - 1);
+      return;
+    }
+
+    throw error;
+  });
+
+  server.listen(port, () => {
+    const address = server.address();
+    const actualPort = typeof address === "object" && address ? address.port : port;
+    console.log(`grain-gradient playground ready at http://localhost:${actualPort}/playground/`);
+  });
+};
+
+listen(Number.isFinite(preferredPort) ? preferredPort : 4173);
