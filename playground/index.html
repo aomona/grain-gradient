@@ -520,9 +520,10 @@
       let api;
 
       try {
-        api = await import("../dist/index.js");
+        const modulePath = import.meta.env?.DEV ? "../src/index.ts" : "../dist/index.js";
+        api = await import(modulePath);
       } catch (error) {
-        setFeedback("error", "Import failed", "Could not load ../dist/index.js.", error?.stack || String(error));
+        setFeedback("error", "Import failed", "Could not load grain-gradient module.", error?.stack || String(error));
         throw error;
       }
 
