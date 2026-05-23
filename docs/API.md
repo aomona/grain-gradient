@@ -140,11 +140,32 @@ Props:
 
 - All `createGrainGradientCSS` options
 - `androidCanvasFallback?: "auto" | "on" | "off"` — React-only Canvas PNG fallback for Android Chrome. `auto` detects Android Chrome after hydration; SSR renders SVG grain first, so there is no server-side `window`, `navigator`, or `canvas` access. The Canvas fallback uses `seed`, `frequency` / `baseFrequency`, and `contrast`; SVG-specific sizing options remain SVG-only.
+- `androidCanvasFallbackUserAgent?: string | null` — Optional SSR user-agent hint for `androidCanvasFallback="auto"`. Pass the request UA from frameworks such as Next.js so the post-hydration fallback decision matches server-known user-agent data.
 - `className?: string`
 - `style?: React.CSSProperties`
 - `children?: React.ReactNode`
 
 The component does not add text or UI by itself. If children are passed, they are rendered above the background layers.
+
+SSR framework example with Next.js App Router:
+
+```tsx
+import { headers } from "next/headers";
+import { GrainGradient } from "grain-gradient/react";
+
+export default async function Page() {
+  const userAgent = (await headers()).get("user-agent");
+
+  return (
+    <GrainGradient
+      androidCanvasFallback="auto"
+      androidCanvasFallbackUserAgent={userAgent}
+    />
+  );
+}
+```
+
+The user-agent hint is only used after hydration to decide whether to generate Canvas grain. The server render remains SVG-only to avoid hydration mismatches and server-side Canvas requirements.
 
 ### `useGrainGradient(options?)`
 

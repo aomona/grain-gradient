@@ -50,6 +50,19 @@ export function Hero() {
 }
 ```
 
+For SSR frameworks, pass the request user agent as a hint so `auto` can use the same Android Chrome detection after hydration:
+
+```tsx
+import { headers } from 'next/headers';
+import { GrainGradient } from 'grain-gradient/react';
+
+export default async function Page() {
+  const userAgent = (await headers()).get('user-agent');
+
+  return <GrainGradient androidCanvasFallback="auto" androidCanvasFallbackUserAgent={userAgent} />;
+}
+```
+
 React is a peer dependency via the `grain-gradient/react` subpath.
 
 ## Local playground

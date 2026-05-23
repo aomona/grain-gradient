@@ -6,6 +6,7 @@ export type AndroidCanvasFallback = "auto" | "on" | "off";
 
 export interface GrainGradientReactOptions extends GrainGradientCSSOptions {
   androidCanvasFallback?: AndroidCanvasFallback;
+  androidCanvasFallbackUserAgent?: string | null;
 }
 
 export interface GrainGradientProps extends GrainGradientReactOptions {
@@ -17,16 +18,17 @@ export interface GrainGradientProps extends GrainGradientReactOptions {
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const canvasNoiseCache = new Map<string, string>();
 
-const isAndroidChrome = () => {
-  if (typeof navigator === "undefined") return false;
-  const ua = navigator.userAgent;
+const getBrowserUserAgent = () => typeof navigator === "undefined" ? "" : navigator.userAgent;
+
+const isAndroidChrome = (userAgent = getBrowserUserAgent()) => {
+  const ua = userAgent;
   return /Android/i.test(ua) && /Chrome\//i.test(ua) && !/(; wv|Version\/|EdgA|OPR|SamsungBrowser|Firefox|CriOS)/i.test(ua);
 };
 
-const shouldUseCanvasFallback = (fallback: AndroidCanvasFallback | undefined) => {
+const shouldUseCanvasFallback = (fallback: AndroidCanvasFallback | undefined, userAgent?: string | null) => {
   if (fallback === "on") return true;
   if (fallback === "off") return false;
-  return isAndroidChrome();
+  return isAndroidChrome(userAgent ?? getBrowserUserAgent());
 };
 
 const canvasNoiseKey = (options: GrainGradientReactOptions = {}) => {
@@ -106,12 +108,12 @@ export function useGrainGradient(options: GrainGradientReactOptions = {}) {
   const [canvasGrainUrl, setCanvasGrainUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!shouldUseCanvasFallback(options.androidCanvasFallback)) {
+    if (!shouldUseCanvasFallback(options.androidCanvasFallback, options.androidCanvasFallbackUserAgent)) {
       setCanvasGrainUrl(null);
       return;
     }
     setCanvasGrainUrl(createCanvasNoise(options));
-  }, [grainKey, options.androidCanvasFallback]);
+  }, [grainKey, options.androidCanvasFallback, options.androidCanvasFallbackUserAgent]);
 
   const usesCanvasFallback = Boolean(canvasGrainUrl);
   const activeGrainUrl = canvasGrainUrl ?? grainUrl;
