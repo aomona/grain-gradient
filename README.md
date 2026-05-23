@@ -17,7 +17,12 @@ npm i grain-gradient
 ```ts
 import { createGrainGradientCSS, presets } from 'grain-gradient';
 
-const css = createGrainGradientCSS(presets['Aurora Citrus']);
+const css = createGrainGradientCSS({
+  ...presets['Aurora Citrus'],
+  motionPreset: 'drift',
+  motionSpeed: 38,
+  motionIntensity: 46,
+});
 ```
 
 `grain-gradient` has no runtime dependencies. The core entry does not import React.
@@ -35,6 +40,9 @@ export function Hero() {
   return (
     <GrainGradient
       colors={["#c2e812", "#ff7f11", "#ee4266", "#2a1e5c"]}
+      motionPreset="drift"
+      motionSpeed={38}
+      motionIntensity={46}
       style={{ minHeight: "100vh" }}
     />
   );

@@ -29,6 +29,28 @@ test('creates css snippet', () => {
   assert.ok(css.includes('::after'));
   assert.ok(css.includes('pointer-events: none'));
   assert.ok(css.includes('mix-blend-mode: overlay'));
+  assert.ok(css.includes('inset: -18%'));
+  assert.ok(css.includes('inset: -8%'));
+});
+
+test('creates animated css when motion is enabled', () => {
+  const css = createGrainGradientCSS({ motionPreset: 'drift', motionSpeed: 40, motionIntensity: 50 });
+  assert.ok(css.includes('animation:'));
+  assert.ok(css.includes('@keyframes'));
+  assert.ok(css.includes('prefers-reduced-motion'));
+  assert.ok(css.includes('grain-gradient-grain-gradient-mesh-drift'));
+  assert.ok(!css.includes('grain-gradient-grain-gradient-grain-drift'));
+});
+
+test('does not create motion keyframes when speed is zero', () => {
+  const css = createGrainGradientCSS({ motionPreset: 'drift', motionSpeed: 0 });
+  assert.ok(!css.includes('@keyframes'));
+});
+
+test('ignores invalid motion preset values', () => {
+  const css = createGrainGradientCSS({ motionPreset: 'invalid', motionSpeed: 40 });
+  assert.ok(!css.includes('undefined'));
+  assert.ok(!css.includes('@keyframes'));
 });
 
 test('creates svg noise with expected defaults', () => {
