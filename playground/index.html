@@ -114,6 +114,48 @@
         font-variant-numeric: tabular-nums;
       }
 
+      .info-mark {
+        position: relative;
+        display: inline-grid;
+        place-items: center;
+        width: 18px;
+        height: 18px;
+        border: 1px solid var(--line-strong);
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 0.72rem;
+        line-height: 1;
+        cursor: help;
+      }
+
+      .info-mark::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        right: 0;
+        top: calc(100% + 8px);
+        z-index: 10;
+        width: min(280px, 78vw);
+        border: 1px solid var(--line-strong);
+        border-radius: 10px;
+        background: #101012;
+        color: var(--text);
+        padding: 10px 12px;
+        font-size: 0.76rem;
+        line-height: 1.45;
+        text-align: left;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(-4px);
+        transition: opacity 140ms ease, transform 140ms ease;
+      }
+
+      .info-mark:hover::after,
+      .info-mark:focus-visible::after {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
       select,
       input,
       button {
@@ -346,7 +388,7 @@
 
           <div class="field">
             <div class="label-row">
-              <label for="grainOpacity">SVG grain</label>
+              <label for="grainOpacity">Grain opacity</label>
               <span class="value" id="grainOpacity-value"></span>
             </div>
             <input id="grainOpacity" type="range" min="0" max="1" step="0.01" />
@@ -354,10 +396,10 @@
 
           <div class="field">
             <div class="label-row">
-              <label for="frequency">SVG frequency</label>
-              <span class="value" id="frequency-value"></span>
+              <label for="grainDensity">Grain density</label>
+              <span class="value" id="grainDensity-value"></span>
             </div>
-            <input id="frequency" type="range" min="0.35" max="2.4" step="0.01" />
+            <input id="grainDensity" type="range" min="0" max="100" step="1" />
           </div>
 
           <div class="field">
@@ -378,6 +420,23 @@
               <option value="screen">screen</option>
               <option value="multiply">multiply</option>
               <option value="normal">normal</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <div class="label-row">
+              <label for="androidCanvasFallback">Android canvas fallback</label>
+              <span
+                class="info-mark"
+                tabindex="0"
+                data-tooltip="Android Chrome only can render SVG turbulence backgrounds with visible artifacts, so this switches the grain layer to a Canvas-generated PNG fallback."
+                aria-label="Android Chrome only can render SVG turbulence backgrounds with visible artifacts, so this switches the grain layer to a Canvas-generated PNG fallback."
+              >i</span>
+            </div>
+            <select id="androidCanvasFallback">
+              <option value="auto">auto</option>
+              <option value="off">off</option>
+              <option value="on">on</option>
             </select>
           </div>
 
@@ -421,9 +480,10 @@
         swirl: $("swirl"),
         motionSpeed: $("motionSpeed"),
         grainOpacity: $("grainOpacity"),
-        frequency: $("frequency"),
+        grainDensity: $("grainDensity"),
         contrast: $("contrast"),
         blendMode: $("blendMode"),
+        androidCanvasFallback: $("androidCanvasFallback"),
         seedRange: $("seedRange"),
         seedNumber: $("seedNumber"),
         copyCss: $("copyCss"),
@@ -435,7 +495,7 @@
         distortionValue: $("distortion-value"),
         swirlValue: $("swirl-value"),
         grainOpacityValue: $("grainOpacity-value"),
-        frequencyValue: $("frequency-value"),
+        grainDensityValue: $("grainDensity-value"),
         contrastValue: $("contrast-value"),
         seedValue: $("seed-value"),
         meshLayer: $("meshLayer"),
@@ -481,10 +541,68 @@
         distortion: 44,
         swirl: 30,
         grainOpacity: 0.34,
-        frequency: 1.25,
+        grainDensity: 90,
         contrast: 1.7,
         seed: 1,
         blendMode: "overlay",
+        androidCanvasFallback: "auto",
+      };
+
+      const isAndroidChrome = () => {
+        const ua = navigator.userAgent;
+        return /Android/i.test(ua) && /Chrome\//i.test(ua) && !/(; wv|Version\/|EdgA|OPR|SamsungBrowser|Firefox|CriOS)/i.test(ua);
+      };
+
+      const useCanvasFallback = () => {
+        if (state.androidCanvasFallback === "on") return true;
+        if (state.androidCanvasFallback === "off") return false;
+        return isAndroidChrome();
+      };
+
+      const densityToFrequency = (density) => {
+        const progress = clamp(density, 0, 100) / 100;
+        return 0.04 + progress * progress * (2.4 - 0.04);
+      };
+
+      const densityToCanvasSize = (density) => Math.round(720 - clamp(density, 0, 100) * 5.8);
+
+      const createCanvasNoise = ({ seed, density, contrast }) => {
+        const size = 1024;
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const context = canvas.getContext("2d", { alpha: false });
+        const image = context.createImageData(size, size);
+        let value = Math.floor(Number.isFinite(seed) ? seed : 1) >>> 0;
+        const nextRandom = () => {
+          value = (value * 1664525 + 1013904223) >>> 0;
+          return value / 4294967296;
+        };
+        const threshold = 0.5;
+        const grainContrast = clamp(contrast / 2.5, 0.35, 1);
+        const blockSize = Math.max(1, Math.round(2.25 - (clamp(density, 0, 100) / 100) * 1.25));
+
+        for (let y = 0; y < size; y += blockSize) {
+          for (let x = 0; x < size; x += blockSize) {
+            const bit = nextRandom() > threshold ? 1 : 0;
+            const channel = Math.round(128 + (bit ? 127 : -127) * grainContrast);
+            for (let yy = 0; yy < blockSize; yy++) {
+              for (let xx = 0; xx < blockSize; xx++) {
+                const px = x + xx;
+                const py = y + yy;
+                if (px >= size || py >= size) continue;
+                const offset = (py * size + px) * 4;
+                image.data[offset] = channel;
+                image.data[offset + 1] = channel;
+                image.data[offset + 2] = channel;
+                image.data[offset + 3] = 255;
+              }
+            }
+          }
+        }
+
+        context.putImageData(image, 0, 0);
+        return `url("${canvas.toDataURL("image/png")}")`;
       };
 
       const syncInputs = () => {
@@ -493,18 +611,19 @@
         elements.distortion.value = String(state.distortion);
         elements.swirl.value = String(state.swirl);
         elements.grainOpacity.value = String(state.grainOpacity);
-        elements.frequency.value = String(state.frequency);
+        elements.grainDensity.value = String(state.grainDensity);
         elements.contrast.value = String(state.contrast);
         elements.seedRange.value = String(state.seed);
         elements.seedNumber.value = String(state.seed);
         elements.blendMode.value = state.blendMode;
+        elements.androidCanvasFallback.value = state.androidCanvasFallback;
       };
 
       const syncLabels = () => {
         elements.distortionValue.textContent = `${state.distortion}`;
         elements.swirlValue.textContent = `${state.swirl}`;
         elements.grainOpacityValue.textContent = format(state.grainOpacity, 2);
-        elements.frequencyValue.textContent = format(state.frequency, 2);
+        elements.grainDensityValue.textContent = `${state.grainDensity}`;
         elements.contrastValue.textContent = format(state.contrast, 2);
         elements.seedValue.textContent = String(state.seed);
       };
@@ -539,6 +658,8 @@
 
           const swirlShift = state.swirl / 100;
           const swirlScale = 1 + state.swirl * 0.004;
+          const grainFrequency = densityToFrequency(state.grainDensity);
+          const canvasGrainSize = densityToCanvasSize(state.grainDensity);
 
           elements.meshLayer.style.backgroundImage = meshBackground;
           elements.meshLayer.style.backgroundRepeat = "no-repeat";
@@ -547,11 +668,18 @@
           elements.meshLayer.style.filter = `blur(${state.distortion * 0.75}px) saturate(${1.05 + state.distortion / 160}) contrast(${1 + state.distortion / 260})`;
           elements.meshLayer.style.transform = `scale(${swirlScale}) rotate(${state.swirl * 0.12}deg)`;
 
-          elements.grainLayer.style.backgroundImage = createTurbulenceNoise({
-            seed: state.seed,
-            frequency: state.frequency,
-            contrast: state.contrast,
-          });
+          const canvasFallback = useCanvasFallback();
+          elements.grainLayer.style.backgroundImage =
+            canvasFallback
+              ? createCanvasNoise({ seed: state.seed, density: state.grainDensity, contrast: state.contrast })
+              : createTurbulenceNoise({
+                  seed: state.seed,
+                  frequency: grainFrequency,
+                  contrast: state.contrast,
+                });
+          elements.grainLayer.style.backgroundSize = canvasFallback ? `${canvasGrainSize}px ${canvasGrainSize}px` : "100% 100%";
+          elements.grainLayer.style.backgroundRepeat = canvasFallback ? "repeat" : "no-repeat";
+          elements.grainLayer.style.imageRendering = canvasFallback ? "pixelated" : "auto";
           elements.grainLayer.style.opacity = String(state.grainOpacity);
           elements.grainLayer.style.mixBlendMode = state.blendMode;
 
@@ -593,8 +721,8 @@
         render();
       });
 
-      elements.frequency.addEventListener("input", (event) => {
-        state.frequency = Number(event.target.value);
+      elements.grainDensity.addEventListener("input", (event) => {
+        state.grainDensity = Number(event.target.value);
         render();
       });
 
@@ -608,6 +736,11 @@
         render();
       });
 
+      elements.androidCanvasFallback.addEventListener("change", (event) => {
+        state.androidCanvasFallback = event.target.value;
+        render();
+      });
+
       elements.seedRange.addEventListener("input", (event) => syncSeed(event.target.value));
       elements.seedNumber.addEventListener("input", (event) => syncSeed(event.target.value));
 
@@ -616,10 +749,11 @@
         state.distortion = 44;
         state.swirl = 30;
         state.grainOpacity = 0.34;
-        state.frequency = 1.25;
+        state.grainDensity = 90;
         state.contrast = 1.7;
         state.seed = 1;
         state.blendMode = "overlay";
+        state.androidCanvasFallback = "auto";
         syncInputs();
         render();
       });
@@ -634,7 +768,7 @@
             intensity: 1.05 + state.distortion / 110,
             saturation: 1 + state.distortion / 160,
             seed: state.seed,
-            frequency: state.frequency,
+            frequency: densityToFrequency(state.grainDensity),
             contrast: state.contrast,
             opacity: state.grainOpacity,
             blendMode: state.blendMode,

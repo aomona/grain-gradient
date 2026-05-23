@@ -37,7 +37,7 @@ Options:
 
 | Option | Default | Range / note |
 | --- | ---: | --- |
-| `frequency` | `1.25` | Clamped to `0.35` – `2.4` |
+| `frequency` | `1.25` | Clamped to `0.04` – `2.4` |
 | `baseFrequency` | — | Alias fallback for `frequency` |
 | `contrast` | `1.7` | Clamped to `1.0` – `2.5` |
 | `seed` | `1` | Clamped to `0` – `9999` |
@@ -46,6 +46,8 @@ Options:
 | `width` | `3200` | SVG canvas width |
 | `height` | `2200` | SVG canvas height |
 | `size` | — | Fallback for both width and height |
+
+The playground can switch to a Canvas-generated PNG grain fallback on Android Chrome for device testing. The core API always returns SVG turbulence noise.
 
 ### `createMeshGradient(options?)`
 
