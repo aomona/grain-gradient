@@ -37,7 +37,7 @@ const encodeSvg = (svg: string) => `url("data:image/svg+xml,${encodeURIComponent
 
 export function createTurbulenceNoise(options: TurbulenceNoiseOptions = {}): string {
   const seed = Math.floor(clamp(options.seed ?? 1, 0, 9999));
-  const baseFrequency = clamp(options.frequency ?? options.baseFrequency ?? 1.25, 0.35, 2.4);
+  const baseFrequency = clamp(options.frequency ?? options.baseFrequency ?? 1.25, 0.04, 2.4);
   const numOctaves = Math.floor(clamp(options.numOctaves ?? 2, 1, 5));
   const stitchTiles = options.stitchTiles ?? true;
   const contrast = clamp(options.contrast ?? 1.7, 1.0, 2.5);

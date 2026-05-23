@@ -37,7 +37,7 @@ Options:
 
 | Option | Default | Range / note |
 | --- | ---: | --- |
-| `frequency` | `1.25` | Clamped to `0.35` – `2.4` |
+| `frequency` | `1.25` | Clamped to `0.04` – `2.4` |
 | `baseFrequency` | — | Alias fallback for `frequency` |
 | `contrast` | `1.7` | Clamped to `1.0` – `2.5` |
 | `seed` | `1` | Clamped to `0` – `9999` |

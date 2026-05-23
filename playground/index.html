@@ -559,7 +559,10 @@
         return isAndroidChrome();
       };
 
-      const densityToFrequency = (density) => 0.35 + (clamp(density, 0, 100) / 100) * (2.4 - 0.35);
+      const densityToFrequency = (density) => {
+        const progress = clamp(density, 0, 100) / 100;
+        return 0.04 + progress * progress * (2.4 - 0.04);
+      };
 
       const densityToCanvasSize = (density) => Math.round(720 - clamp(density, 0, 100) * 5.8);
 

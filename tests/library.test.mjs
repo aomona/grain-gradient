@@ -39,3 +39,9 @@ test('creates svg noise with expected defaults', () => {
   assert.ok(decoded.includes('height="2200"'));
   assert.ok(decoded.includes('feColorMatrix'));
 });
+
+test('allows lower svg grain frequency for density controls', () => {
+  const noise = createTurbulenceNoise({ frequency: 0.04 });
+  const decoded = decodeURIComponent(noise.slice('url("data:image/svg+xml,'.length, -2));
+  assert.ok(decoded.includes('baseFrequency="0.04"'));
+});
