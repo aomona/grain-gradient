@@ -139,7 +139,7 @@ export function Background() {
 Props:
 
 - All `createGrainGradientCSS` options
-- `androidCanvasFallback?: "auto" | "on" | "off"` — React-only Canvas PNG fallback for Android Chrome. `auto` detects Android Chrome after hydration; SSR renders SVG grain first, so there is no server-side `window`, `navigator`, or `canvas` access. The Canvas fallback uses `seed`, `frequency` / `baseFrequency`, and `contrast`; SVG-specific sizing options remain SVG-only.
+- `androidCanvasFallback?: "auto" | "on" | "off"` — Built-in Canvas PNG fallback for the React helper on Android Chrome. `auto` detects Android Chrome after hydration; SSR renders SVG grain first, so there is no server-side `window`, `navigator`, or `canvas` access. The Canvas fallback uses `seed`, `frequency` / `baseFrequency`, and `contrast`; SVG-specific sizing options remain SVG-only.
 - `androidCanvasFallbackUserAgent?: string | null` — Optional SSR user-agent hint for `androidCanvasFallback="auto"`. Pass the request UA from frameworks such as Next.js so the post-hydration fallback decision matches server-known user-agent data.
 - `className?: string`
 - `style?: React.CSSProperties`
