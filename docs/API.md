@@ -82,6 +82,9 @@ const css = createGrainGradientCSS({
   colors: ["#c2e812", "#ff7f11", "#ee4266", "#2a1e5c"],
   opacity: 0.34,
   blendMode: "overlay",
+  motionPreset: "drift",
+  motionSpeed: 38,
+  motionIntensity: 46,
 });
 ```
 
@@ -92,6 +95,9 @@ Options include all `createMeshGradient` and `createTurbulenceNoise` options, pl
 | `selector` | `.grain-gradient` | CSS selector for the generated snippet |
 | `opacity` | `0.34` | Grain layer opacity |
 | `blendMode` | `overlay` | Grain layer `mix-blend-mode` |
+| `motionPreset` | `none` | `none`, `drift`, `breathe`, or `orbit` |
+| `motionSpeed` | `0` | `0` – `100`; `0` disables animation |
+| `motionIntensity` | `50` | `0` – `100`; controls travel/zoom strength |
 
 The generated grain layer uses:
 
@@ -100,6 +106,8 @@ background-size: 100% 100%;
 background-repeat: no-repeat;
 pointer-events: none;
 ```
+
+When motion is enabled, the generated CSS appends `animation` declarations, scoped `@keyframes`, and a `prefers-reduced-motion: reduce` override for the selected preset. The animation is CSS-only, so the SVG noise data URL is not regenerated per frame.
 
 ## React API
 
@@ -118,6 +126,9 @@ export function Background() {
       contrast={1.7}
       opacity={0.34}
       blendMode="overlay"
+      motionPreset="drift"
+      motionSpeed={38}
+      motionIntensity={46}
       style={{ minHeight: "100vh" }}
     />
   );

@@ -26,7 +26,15 @@ export interface MeshGradientOptions {
   saturation?: number;
 }
 
-export interface GrainGradientCSSOptions extends MeshGradientOptions, TurbulenceNoiseOptions {
+export type MotionPreset = "none" | "drift" | "breathe" | "orbit";
+
+export interface MotionOptions {
+  motionPreset?: MotionPreset;
+  motionSpeed?: number;
+  motionIntensity?: number;
+}
+
+export interface GrainGradientCSSOptions extends MeshGradientOptions, TurbulenceNoiseOptions, MotionOptions {
   selector?: string;
   blendMode?: string;
 }
@@ -34,6 +42,51 @@ export interface GrainGradientCSSOptions extends MeshGradientOptions, Turbulence
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 const encodeSvg = (svg: string) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+
+const motionPresets = new Set<MotionPreset>(["none", "drift", "breathe", "orbit"]);
+
+const normalizeMotion = (options: MotionOptions = {}) => {
+  const preset = motionPresets.has(options.motionPreset as MotionPreset) ? (options.motionPreset as MotionPreset) : "none";
+  const speed = clamp(options.motionSpeed ?? 0, 0, 100);
+  const intensity = clamp(options.motionIntensity ?? 50, 0, 100);
+  const enabled = preset !== "none" && speed > 0 && intensity > 0;
+  const duration = Math.round(56 - speed * 0.46);
+  const travel = (4 + intensity * 0.16).toFixed(1);
+  const zoom = (1.12 + intensity * 0.0018).toFixed(3);
+  const rotate = (intensity * 0.12).toFixed(1);
+  const grainShift = (2 + intensity * 0.08).toFixed(1);
+
+  return {
+    preset,
+    enabled,
+    duration: Math.max(10, duration),
+    travel,
+    zoom,
+    rotate,
+    grainShift,
+  };
+};
+
+const keyframeName = (selector: string) => `grain-gradient-${selector.replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "motion"}`;
+
+function createGrainGradientMotionCSS(options: GrainGradientCSSOptions = {}): string {
+  const selector = options.selector ?? ".grain-gradient";
+  const motion = normalizeMotion(options);
+  if (!motion.enabled) return "";
+
+  const name = keyframeName(selector);
+  const meshName = `${name}-mesh-${motion.preset}`;
+  const meshAnimation = `${meshName} ${motion.duration}s ease-in-out infinite alternate`;
+
+  const motionKeyframes: Record<Exclude<MotionPreset, "none">, string> = {
+    drift: `@keyframes ${meshName} {\n  0% { transform: scale(1.12) translate3d(-${motion.travel}%, -${motion.travel}%, 0); background-position: 42% 48%; }\n  100% { transform: scale(${motion.zoom}) translate3d(${motion.travel}%, ${motion.travel}%, 0); background-position: 58% 52%; }\n}`,
+    breathe: `@keyframes ${meshName} {\n  0% { transform: scale(1.12); filter: blur(${clamp(options.blur ?? 42, 0, 80)}px) saturate(${clamp(options.saturation ?? options.intensity ?? 1.18, 0.2, 2.5)}); }\n  100% { transform: scale(${motion.zoom}); filter: blur(${clamp((options.blur ?? 42) + Number(motion.travel), 0, 80)}px) saturate(${clamp((options.saturation ?? options.intensity ?? 1.18) + 0.18, 0.2, 2.5)}); }\n}`,
+    orbit: `@keyframes ${meshName} {\n  0% { transform: scale(1.12) rotate(-${motion.rotate}deg) translate3d(-${motion.travel}%, ${motion.travel}%, 0); background-position: 46% 54%; }\n  100% { transform: scale(${motion.zoom}) rotate(${motion.rotate}deg) translate3d(${motion.travel}%, -${motion.travel}%, 0); background-position: 54% 46%; }\n}`,
+  };
+  const keyframes = motionKeyframes[motion.preset as Exclude<MotionPreset, "none">];
+
+  return `${selector}::before { animation: ${meshAnimation}; }\n\n${keyframes}\n\n@media (prefers-reduced-motion: reduce) {\n  ${selector}::before { animation: none; }\n}`;
+}
 
 export function createTurbulenceNoise(options: TurbulenceNoiseOptions = {}): string {
   const seed = Math.floor(clamp(options.seed ?? 1, 0, 9999));
@@ -66,6 +119,7 @@ export function createMeshGradient(options: MeshGradientOptions = {}): string {
 
 export function createGrainGradientCSS(options: GrainGradientCSSOptions = {}): string {
   const selector = options.selector ?? ".grain-gradient";
+  const motionCSS = createGrainGradientMotionCSS(options);
   return `
 ${selector} {
   position: relative;
@@ -76,7 +130,7 @@ ${selector} {
 ${selector}::before {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: -18%;
   background-image: ${createMeshGradient(options)};
   background-size: 100% 100%;
   background-repeat: no-repeat;
@@ -88,7 +142,7 @@ ${selector}::before {
 ${selector}::after {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: -8%;
   pointer-events: none;
   background-image: ${createTurbulenceNoise(options)};
   background-size: 100% 100%;
@@ -96,7 +150,9 @@ ${selector}::after {
   opacity: ${clamp(options.opacity ?? 0.34, 0, 1)};
   mix-blend-mode: ${options.blendMode ?? "overlay"};
   z-index: 1;
-}`.trim();
+}
+
+${motionCSS}`.trim();
 }
 
 export const presets = {

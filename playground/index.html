@@ -211,6 +211,13 @@
         grid-template-columns: 1fr 92px;
       }
 
+      .motion-help {
+        margin: -2px 0 0;
+        color: var(--muted);
+        font-size: 0.74rem;
+        line-height: 1.4;
+      }
+
       .button-row {
         display: flex;
         gap: 8px;
@@ -286,11 +293,11 @@
       #meshLayer,
       #grainLayer {
         position: absolute;
-        inset: 0;
         pointer-events: none;
       }
 
       #meshLayer {
+        inset: -18%;
         transform-origin: 50% 50%;
         will-change: transform, background-image, background-position, background-size, filter;
         background-color: #0b0b0c;
@@ -307,12 +314,46 @@
       }
 
       #grainLayer {
+        inset: -8%;
         mix-blend-mode: overlay;
         opacity: 0.34;
         background-repeat: no-repeat;
         background-size: 100% 100%;
         background-position: center;
         will-change: background-image, opacity, mix-blend-mode;
+      }
+
+      #meshLayer[data-motion="drift"] {
+        animation: mesh-drift var(--motion-duration, 32s) ease-in-out infinite alternate;
+      }
+
+      #meshLayer[data-motion="breathe"] {
+        animation: mesh-breathe var(--motion-duration, 32s) ease-in-out infinite alternate;
+      }
+
+      #meshLayer[data-motion="orbit"] {
+        animation: mesh-orbit var(--motion-duration, 32s) ease-in-out infinite alternate;
+      }
+
+      @keyframes mesh-drift {
+        from { transform: var(--mesh-transform) translate3d(calc(var(--motion-travel) * -1), calc(var(--motion-travel) * -1), 0); background-position: 42% 48%; }
+        to { transform: var(--mesh-transform) translate3d(var(--motion-travel), var(--motion-travel), 0); background-position: 58% 52%; }
+      }
+
+      @keyframes mesh-breathe {
+        from { transform: var(--mesh-transform); filter: var(--mesh-filter); }
+        to { transform: var(--mesh-transform) scale(var(--motion-zoom)); filter: var(--mesh-filter-strong); }
+      }
+
+      @keyframes mesh-orbit {
+        from { transform: var(--mesh-transform) rotate(calc(var(--motion-rotate) * -1)) translate3d(calc(var(--motion-travel) * -1), var(--motion-travel), 0); background-position: 46% 54%; }
+        to { transform: var(--mesh-transform) rotate(var(--motion-rotate)) translate3d(var(--motion-travel), calc(var(--motion-travel) * -1), 0); background-position: 54% 46%; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #meshLayer {
+          animation: none !important;
+        }
       }
 
       .preview-fallback {
@@ -338,7 +379,7 @@
       <aside class="sidebar">
         <div class="brand">
           <h1>grain-gradient playground</h1>
-          <p>Static preview for mesh + SVG grain. Copy export CSS when ready.</p>
+          <p>Live preview for mesh + SVG grain motion. Copy export CSS when ready.</p>
         </div>
 
         <section class="controls card" aria-label="Gradient controls">
@@ -380,10 +421,31 @@
 
           <div class="field">
             <div class="label-row">
-              <label for="motionSpeed">Motion speed</label>
-              <span class="value" id="motionSpeed-value">CSS static</span>
+              <label for="motionPreset">Motion preset</label>
             </div>
-            <input id="motionSpeed" type="range" min="0" max="100" step="1" value="0" disabled />
+            <select id="motionPreset">
+              <option value="none">Static</option>
+              <option value="drift">Slow drift</option>
+              <option value="breathe">Soft breathe</option>
+              <option value="orbit">Gentle orbit</option>
+            </select>
+            <p class="motion-help">Pick one preset for movement, then fine-tune speed and intensity.</p>
+          </div>
+
+          <div class="field">
+            <div class="label-row">
+              <label for="motionSpeed">Motion speed</label>
+              <span class="value" id="motionSpeed-value"></span>
+            </div>
+            <input id="motionSpeed" type="range" min="0" max="100" step="1" />
+          </div>
+
+          <div class="field">
+            <div class="label-row">
+              <label for="motionIntensity">Motion intensity</label>
+              <span class="value" id="motionIntensity-value"></span>
+            </div>
+            <input id="motionIntensity" type="range" min="0" max="100" step="1" />
           </div>
 
           <div class="field">
@@ -478,7 +540,9 @@
         colors: [$("color-1"), $("color-2"), $("color-3"), $("color-4")],
         distortion: $("distortion"),
         swirl: $("swirl"),
+        motionPreset: $("motionPreset"),
         motionSpeed: $("motionSpeed"),
+        motionIntensity: $("motionIntensity"),
         grainOpacity: $("grainOpacity"),
         grainDensity: $("grainDensity"),
         contrast: $("contrast"),
@@ -494,6 +558,8 @@
         feedbackError: $("feedback-error"),
         distortionValue: $("distortion-value"),
         swirlValue: $("swirl-value"),
+        motionSpeedValue: $("motionSpeed-value"),
+        motionIntensityValue: $("motionIntensity-value"),
         grainOpacityValue: $("grainOpacity-value"),
         grainDensityValue: $("grainDensity-value"),
         contrastValue: $("contrast-value"),
@@ -545,6 +611,9 @@
         contrast: 1.7,
         seed: 1,
         blendMode: "overlay",
+        motionPreset: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "none" : "drift",
+        motionSpeed: 38,
+        motionIntensity: 46,
         androidCanvasFallback: "auto",
       };
 
@@ -610,6 +679,9 @@
         elements.colors.forEach((input, index) => { input.value = state.colors[index]; });
         elements.distortion.value = String(state.distortion);
         elements.swirl.value = String(state.swirl);
+        elements.motionPreset.value = state.motionPreset;
+        elements.motionSpeed.value = String(state.motionSpeed);
+        elements.motionIntensity.value = String(state.motionIntensity);
         elements.grainOpacity.value = String(state.grainOpacity);
         elements.grainDensity.value = String(state.grainDensity);
         elements.contrast.value = String(state.contrast);
@@ -622,6 +694,8 @@
       const syncLabels = () => {
         elements.distortionValue.textContent = `${state.distortion}`;
         elements.swirlValue.textContent = `${state.swirl}`;
+        elements.motionSpeedValue.textContent = state.motionPreset === "none" || state.motionSpeed === 0 ? "static" : `${state.motionSpeed}`;
+        elements.motionIntensityValue.textContent = `${state.motionIntensity}`;
         elements.grainOpacityValue.textContent = format(state.grainOpacity, 2);
         elements.grainDensityValue.textContent = `${state.grainDensity}`;
         elements.contrastValue.textContent = format(state.contrast, 2);
@@ -658,15 +732,30 @@
 
           const swirlShift = state.swirl / 100;
           const swirlScale = 1 + state.swirl * 0.004;
+          const motionEnabled = state.motionPreset !== "none" && state.motionSpeed > 0 && state.motionIntensity > 0;
+          const motionDuration = Math.max(10, Math.round(56 - state.motionSpeed * 0.46));
+          const motionTravel = 4 + state.motionIntensity * 0.16;
+          const motionZoom = 1 + state.motionIntensity * 0.0016;
+          const motionRotate = state.motionIntensity * 0.12;
           const grainFrequency = densityToFrequency(state.grainDensity);
           const canvasGrainSize = densityToCanvasSize(state.grainDensity);
+          const meshFilter = `blur(${state.distortion * 0.75}px) saturate(${1.05 + state.distortion / 160}) contrast(${1 + state.distortion / 260})`;
+          const meshTransform = `scale(${swirlScale}) rotate(${state.swirl * 0.12}deg)`;
 
           elements.meshLayer.style.backgroundImage = meshBackground;
           elements.meshLayer.style.backgroundRepeat = "no-repeat";
           elements.meshLayer.style.backgroundSize = `${118 + state.swirl * 0.55}% ${118 + state.swirl * 0.4}%`;
           elements.meshLayer.style.backgroundPosition = `${50 + swirlShift * 12}% ${50 - swirlShift * 10}%`;
-          elements.meshLayer.style.filter = `blur(${state.distortion * 0.75}px) saturate(${1.05 + state.distortion / 160}) contrast(${1 + state.distortion / 260})`;
-          elements.meshLayer.style.transform = `scale(${swirlScale}) rotate(${state.swirl * 0.12}deg)`;
+          elements.meshLayer.style.filter = meshFilter;
+          elements.meshLayer.style.transform = meshTransform;
+          elements.meshLayer.style.setProperty("--mesh-filter", meshFilter);
+          elements.meshLayer.style.setProperty("--mesh-filter-strong", `blur(${Math.min(80, state.distortion * 0.75 + motionTravel)}px) saturate(${1.12 + state.distortion / 140}) contrast(${1.03 + state.distortion / 240})`);
+          elements.meshLayer.style.setProperty("--mesh-transform", meshTransform);
+          elements.meshLayer.style.setProperty("--motion-duration", `${motionDuration}s`);
+          elements.meshLayer.style.setProperty("--motion-travel", `${motionTravel}%`);
+          elements.meshLayer.style.setProperty("--motion-zoom", `${motionZoom}`);
+          elements.meshLayer.style.setProperty("--motion-rotate", `${motionRotate}deg`);
+          elements.meshLayer.dataset.motion = motionEnabled ? state.motionPreset : "none";
 
           const canvasFallback = useCanvasFallback();
           elements.grainLayer.style.backgroundImage =
@@ -682,6 +771,7 @@
           elements.grainLayer.style.imageRendering = canvasFallback ? "pixelated" : "auto";
           elements.grainLayer.style.opacity = String(state.grainOpacity);
           elements.grainLayer.style.mixBlendMode = state.blendMode;
+          elements.grainLayer.dataset.motion = "none";
 
           syncLabels();
           setFeedback("ready", "Ready", "Preview is live.");
@@ -713,6 +803,21 @@
 
       elements.swirl.addEventListener("input", (event) => {
         state.swirl = Number(event.target.value);
+        render();
+      });
+
+      elements.motionPreset.addEventListener("change", (event) => {
+        state.motionPreset = event.target.value;
+        render();
+      });
+
+      elements.motionSpeed.addEventListener("input", (event) => {
+        state.motionSpeed = Number(event.target.value);
+        render();
+      });
+
+      elements.motionIntensity.addEventListener("input", (event) => {
+        state.motionIntensity = Number(event.target.value);
         render();
       });
 
@@ -753,6 +858,9 @@
         state.contrast = 1.7;
         state.seed = 1;
         state.blendMode = "overlay";
+        state.motionPreset = "drift";
+        state.motionSpeed = 38;
+        state.motionIntensity = 46;
         state.androidCanvasFallback = "auto";
         syncInputs();
         render();
@@ -772,6 +880,9 @@
             contrast: state.contrast,
             opacity: state.grainOpacity,
             blendMode: state.blendMode,
+            motionPreset: state.motionPreset,
+            motionSpeed: state.motionSpeed,
+            motionIntensity: state.motionIntensity,
           });
 
           await navigator.clipboard.writeText(css);
