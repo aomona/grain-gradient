@@ -573,7 +573,7 @@
         canvas.height = size;
         const context = canvas.getContext("2d", { alpha: false });
         const image = context.createImageData(size, size);
-        let value = (Math.floor(seed) || 1) >>> 0;
+        let value = Math.floor(Number.isFinite(seed) ? seed : 1) >>> 0;
         const nextRandom = () => {
           value = (value * 1664525 + 1013904223) >>> 0;
           return value / 4294967296;
