@@ -22,7 +22,7 @@ const css = createGrainGradientCSS(presets['Aurora Citrus']);
 
 `grain-gradient` has no runtime dependencies. The core entry does not import React.
 
-Client-side Android Chrome automatically receives safer SVG turbulence settings to avoid mobile GPU rasterization artifacts.
+The playground can switch to a Canvas-generated PNG grain fallback for Android Chrome device testing.
 
 See [API reference](./docs/API.md) for all core functions, React helpers, options, and presets.
 

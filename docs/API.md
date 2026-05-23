@@ -46,11 +46,8 @@ Options:
 | `width` | `3200` | SVG canvas width |
 | `height` | `2200` | SVG canvas height |
 | `size` | — | Fallback for both width and height |
-| `androidChromeFix` | `"auto"` | Uses safer noise settings on client-side Android Chrome; pass `true` to force or `false` to disable |
 
-When `androidChromeFix` is active, the SVG noise avoids Android Chrome rasterization artifacts by using a smaller default canvas (`1024 × 1024`), capping high-frequency noise (`frequency <= 0.85`, `numOctaves <= 1`, `contrast <= 1.45`), and replacing hard `discrete` component transfer with a softer table transfer.
-
-Static CSS or SSR code cannot know the requesting browser unless you pass that signal yourself. Use `androidChromeFix: true` when generating Android Chrome-specific CSS on the server. The React helper delays `"auto"` detection until after mount to avoid hydration mismatches.
+The playground can switch to a Canvas-generated PNG grain fallback on Android Chrome for device testing. The core API always returns SVG turbulence noise.
 
 ### `createMeshGradient(options?)`
 
