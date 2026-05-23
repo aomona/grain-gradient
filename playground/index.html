@@ -337,8 +337,8 @@
       }
 
       @keyframes mesh-drift {
-        from { transform: var(--mesh-transform) translate3d(calc(var(--motion-travel) * -1), calc(var(--motion-travel) * -1), 0); }
-        to { transform: var(--mesh-transform) translate3d(var(--motion-travel), var(--motion-travel), 0); }
+        from { transform: var(--mesh-transform) scale(var(--motion-zoom)) translate3d(calc(var(--motion-travel) * -1), calc(var(--motion-travel) * -1), 0); }
+        to { transform: var(--mesh-transform) scale(var(--motion-zoom)) translate3d(var(--motion-travel), var(--motion-travel), 0); }
       }
 
       @keyframes mesh-breathe {
@@ -347,8 +347,8 @@
       }
 
       @keyframes mesh-orbit {
-        from { transform: var(--mesh-transform) rotate(calc(var(--motion-rotate) * -1)) translate3d(calc(var(--motion-travel) * -1), var(--motion-travel), 0); background-position: 46% 54%; }
-        to { transform: var(--mesh-transform) rotate(var(--motion-rotate)) translate3d(var(--motion-travel), calc(var(--motion-travel) * -1), 0); background-position: 54% 46%; }
+        from { transform: var(--mesh-transform) scale(var(--motion-zoom)) rotate(calc(var(--motion-rotate) * -1)) translate3d(calc(var(--motion-travel) * -1), var(--motion-travel), 0); background-position: 46% 54%; }
+        to { transform: var(--mesh-transform) scale(var(--motion-zoom)) rotate(var(--motion-rotate)) translate3d(var(--motion-travel), calc(var(--motion-travel) * -1), 0); background-position: 54% 46%; }
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -576,6 +576,8 @@
 
       const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
+      const defaultMotionPreset = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "none" : "drift";
+
       const setFeedback = (state, title, text, error = "") => {
         elements.feedback.dataset.state = state;
         elements.feedbackTitle.textContent = title;
@@ -613,7 +615,7 @@
         contrast: 1.7,
         seed: 1,
         blendMode: "overlay",
-        motionPreset: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "none" : "drift",
+        motionPreset: defaultMotionPreset(),
         motionSpeed: 38,
         motionIntensity: 46,
         androidCanvasFallback: "auto",
@@ -860,7 +862,7 @@
         state.contrast = 1.7;
         state.seed = 1;
         state.blendMode = "overlay";
-        state.motionPreset = "drift";
+        state.motionPreset = defaultMotionPreset();
         state.motionSpeed = 38;
         state.motionIntensity = 46;
         state.androidCanvasFallback = "auto";
