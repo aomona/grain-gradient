@@ -27,7 +27,7 @@ const css = createGrainGradientCSS({
 
 `grain-gradient` has no runtime dependencies. The core entry does not import React.
 
-The playground can switch to a Canvas-generated PNG grain fallback for Android Chrome device testing.
+The playground and React helper can switch to a Canvas-generated PNG grain fallback for Android Chrome device testing. The React fallback is SSR-safe: SVG grain is rendered first, then Canvas grain is applied after hydration when Android Chrome is detected.
 
 See [API reference](./docs/API.md) for all core functions, React helpers, options, and presets.
 
@@ -43,6 +43,7 @@ export function Hero() {
       motionPreset="drift"
       motionSpeed={38}
       motionIntensity={46}
+      androidCanvasFallback="auto"
       style={{ minHeight: "100vh" }}
     />
   );

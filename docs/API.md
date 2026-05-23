@@ -47,7 +47,7 @@ Options:
 | `height` | `2200` | SVG canvas height |
 | `size` | — | Fallback for both width and height |
 
-The playground can switch to a Canvas-generated PNG grain fallback on Android Chrome for device testing. The core API always returns SVG turbulence noise.
+The core API always returns SVG turbulence noise. The playground and React helper can switch to a Canvas-generated PNG grain fallback on Android Chrome for device testing.
 
 ### `createMeshGradient(options?)`
 
@@ -129,6 +129,7 @@ export function Background() {
       motionPreset="drift"
       motionSpeed={38}
       motionIntensity={46}
+      androidCanvasFallback="auto"
       style={{ minHeight: "100vh" }}
     />
   );
@@ -138,6 +139,7 @@ export function Background() {
 Props:
 
 - All `createGrainGradientCSS` options
+- `androidCanvasFallback?: "auto" | "on" | "off"` — React-only Canvas PNG fallback for Android Chrome. `auto` detects Android Chrome after hydration; SSR renders SVG grain first, so there is no server-side `window`, `navigator`, or `canvas` access. The Canvas fallback uses `seed`, `frequency` / `baseFrequency`, and `contrast`; SVG-specific sizing options remain SVG-only.
 - `className?: string`
 - `style?: React.CSSProperties`
 - `children?: React.ReactNode`
@@ -160,7 +162,7 @@ Return value:
 | --- | --- |
 | `rootStyle` | Relative/overflow-hidden container style |
 | `meshStyle` | Mesh layer style |
-| `grainStyle` | SVG turbulence grain layer style |
+| `grainStyle` | Active grain layer style. It starts as SVG turbulence and may switch to repeated Canvas PNG after hydration when `androidCanvasFallback` applies. |
 | `cssText` | Minimal mesh background CSS text |
 
 ## Presets
