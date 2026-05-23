@@ -53,10 +53,12 @@ React is a peer dependency via the `grain-gradient/react` subpath.
 
 ## Local playground
 
-Run a lightweight preview server with:
+Run the Vite-powered playground with hot reload:
 
 ```bash
-npm run playground
+npm run dev
 ```
 
-Then open `http://localhost:4173/playground/` to tune presets, colors, and grain settings live.
+Then open `http://localhost:5173/playground/` to tune presets, colors, and grain settings live.
+
+Use `npm run playground` to start Vite and open the playground automatically.
