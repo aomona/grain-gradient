@@ -299,7 +299,8 @@
       #meshLayer {
         inset: -18%;
         transform-origin: 50% 50%;
-        will-change: transform, background-image, background-position, background-size, filter;
+        backface-visibility: hidden;
+        will-change: transform;
         background-color: #0b0b0c;
         background-image:
           radial-gradient(circle at 12% 18%, #c2e812 0, transparent 34%),
@@ -336,8 +337,8 @@
       }
 
       @keyframes mesh-drift {
-        from { transform: var(--mesh-transform) translate3d(calc(var(--motion-travel) * -1), calc(var(--motion-travel) * -1), 0); background-position: 42% 48%; }
-        to { transform: var(--mesh-transform) translate3d(var(--motion-travel), var(--motion-travel), 0); background-position: 58% 52%; }
+        from { transform: var(--mesh-transform) translate3d(calc(var(--motion-travel) * -1), calc(var(--motion-travel) * -1), 0); }
+        to { transform: var(--mesh-transform) translate3d(var(--motion-travel), var(--motion-travel), 0); }
       }
 
       @keyframes mesh-breathe {
@@ -587,7 +588,7 @@
 
       try {
         const modulePath = import.meta.env?.DEV ? "../src/index.ts" : "../dist/index.js";
-        api = await import(modulePath);
+        api = await import(/* @vite-ignore */ modulePath);
       } catch (error) {
         setFeedback("error", "Import failed", "Could not load grain-gradient module.", error?.stack || String(error));
         throw error;
