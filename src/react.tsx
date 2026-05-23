@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { createMeshGradient, createTurbulenceNoise, type GrainGradientCSSOptions } from "./core.js";
 
@@ -9,10 +9,19 @@ export interface GrainGradientProps extends GrainGradientCSSOptions {
 }
 
 export function useGrainGradient(options: GrainGradientCSSOptions = {}) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const noiseOptions = useMemo(
+    () =>
+      options.androidChromeFix === undefined || options.androidChromeFix === "auto"
+        ? { ...options, androidChromeFix: mounted ? ("auto" as const) : false }
+        : options,
+    [options, mounted]
+  );
   const meshKey = JSON.stringify([options.colors, options.baseColor, options.intensity, options.saturation, options.blur]);
-  const grainKey = JSON.stringify([options.seed, options.frequency, options.baseFrequency, options.numOctaves, options.contrast, options.width, options.height, options.size, options.stitchTiles]);
+  const grainKey = JSON.stringify([noiseOptions.seed, noiseOptions.frequency, noiseOptions.baseFrequency, noiseOptions.numOctaves, noiseOptions.contrast, noiseOptions.width, noiseOptions.height, noiseOptions.size, noiseOptions.stitchTiles, noiseOptions.androidChromeFix]);
   const meshCss = useMemo(() => createMeshGradient(options), [meshKey]);
-  const grainUrl = useMemo(() => createTurbulenceNoise(options), [grainKey]);
+  const grainUrl = useMemo(() => createTurbulenceNoise(noiseOptions), [grainKey]);
   const cssText = useMemo(() => `background-image: ${meshCss};`, [meshCss]);
   const meshStyle = useMemo(() => ({ backgroundColor: options.baseColor ?? "#0b1020", backgroundImage: meshCss, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat", filter: `blur(${Math.max(0, Math.min(80, options.blur ?? 42))}px) saturate(${Math.max(0.2, Math.min(2.5, options.saturation ?? options.intensity ?? 1.18))})`, transform: "scale(1.12)" }), [meshCss, options.baseColor, options.blur, options.intensity, options.saturation]);
   const grainStyle = useMemo(() => ({ backgroundImage: grainUrl, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat", opacity: options.opacity ?? 0.34, mixBlendMode: (options.blendMode ?? "overlay") as CSSProperties["mixBlendMode"], pointerEvents: "none" as const }), [grainUrl, options.opacity, options.blendMode]);

@@ -16,6 +16,7 @@ export interface TurbulenceNoiseOptions {
   width?: number;
   height?: number;
   size?: number;
+  androidChromeFix?: boolean | "auto";
 }
 
 export interface MeshGradientOptions {
@@ -35,17 +36,35 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 
 const encodeSvg = (svg: string) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 
-export function createTurbulenceNoise(options: TurbulenceNoiseOptions = {}): string {
-  const seed = Math.floor(clamp(options.seed ?? 1, 0, 9999));
-  const baseFrequency = clamp(options.frequency ?? options.baseFrequency ?? 1.25, 0.35, 2.4);
-  const numOctaves = Math.floor(clamp(options.numOctaves ?? 2, 1, 5));
-  const stitchTiles = options.stitchTiles ?? true;
-  const contrast = clamp(options.contrast ?? 1.7, 1.0, 2.5);
-  const width = Math.floor(clamp(options.width ?? options.size ?? 3200, 256, 8192));
-  const height = Math.floor(clamp(options.height ?? options.size ?? 2200, 256, 8192));
-  const offset = ((1 - contrast) / 2).toFixed(3);
+const isAndroidChrome = () => {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  return /Android/i.test(ua) && /Chrome\//i.test(ua) && !/(; wv|Version\/|EdgA|OPR|SamsungBrowser|Firefox|CriOS)/i.test(ua);
+};
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="${baseFrequency}" numOctaves="${numOctaves}" seed="${seed}" stitchTiles="${stitchTiles ? "stitch" : "noStitch"}" /><feColorMatrix type="matrix" values="${contrast} 0 0 0 ${offset} 0 ${contrast} 0 0 ${offset} 0 0 ${contrast} 0 ${offset} 0 0 0 1 0" /><feComponentTransfer><feFuncR type="discrete" tableValues="0 1" /><feFuncG type="discrete" tableValues="0 1" /><feFuncB type="discrete" tableValues="0 1" /></feComponentTransfer></filter><rect width="100%" height="100%" filter="url(#n)" /></svg>`;
+const useAndroidChromeFix = (value: TurbulenceNoiseOptions["androidChromeFix"]) =>
+  value === true || (value !== false && isAndroidChrome());
+
+export function createTurbulenceNoise(options: TurbulenceNoiseOptions = {}): string {
+  const androidChromeFix = useAndroidChromeFix(options.androidChromeFix ?? "auto");
+  const seed = Math.floor(clamp(options.seed ?? 1, 0, 9999));
+  const maxFrequency = androidChromeFix ? 0.85 : 2.4;
+  const maxContrast = androidChromeFix ? 1.45 : 2.5;
+  const maxOctaves = androidChromeFix ? 1 : 5;
+  const defaultWidth = androidChromeFix ? 1024 : 3200;
+  const defaultHeight = androidChromeFix ? 1024 : 2200;
+  const baseFrequency = clamp(options.frequency ?? options.baseFrequency ?? 1.25, 0.35, maxFrequency);
+  const numOctaves = Math.floor(clamp(options.numOctaves ?? 2, 1, maxOctaves));
+  const stitchTiles = options.stitchTiles ?? true;
+  const contrast = clamp(options.contrast ?? 1.7, 1.0, maxContrast);
+  const width = Math.floor(clamp(options.width ?? options.size ?? defaultWidth, 256, 8192));
+  const height = Math.floor(clamp(options.height ?? options.size ?? defaultHeight, 256, 8192));
+  const offset = ((1 - contrast) / 2).toFixed(3);
+  const componentTransfer = androidChromeFix
+    ? `<feComponentTransfer><feFuncR type="table" tableValues="0 0.42 0.68 1" /><feFuncG type="table" tableValues="0 0.42 0.68 1" /><feFuncB type="table" tableValues="0 0.42 0.68 1" /></feComponentTransfer>`
+    : `<feComponentTransfer><feFuncR type="discrete" tableValues="0 1" /><feFuncG type="discrete" tableValues="0 1" /><feFuncB type="discrete" tableValues="0 1" /></feComponentTransfer>`;
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="${baseFrequency}" numOctaves="${numOctaves}" seed="${seed}" stitchTiles="${stitchTiles ? "stitch" : "noStitch"}" /><feColorMatrix type="matrix" values="${contrast} 0 0 0 ${offset} 0 ${contrast} 0 0 ${offset} 0 0 ${contrast} 0 ${offset} 0 0 0 1 0" />${componentTransfer}</filter><rect width="100%" height="100%" filter="url(#n)" /></svg>`;
 
   return encodeSvg(svg);
 }
