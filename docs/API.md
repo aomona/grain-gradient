@@ -47,7 +47,7 @@ Options:
 | `height` | `2200` | SVG canvas height |
 | `size` | — | Fallback for both width and height |
 
-The playground can switch to a Canvas-generated PNG grain fallback on Android Chrome for device testing. The core API always returns SVG turbulence noise.
+The core API always returns SVG turbulence noise. The playground and React helper can switch to a Canvas-generated PNG grain fallback on Android Chrome for device testing.
 
 ### `createMeshGradient(options?)`
 
@@ -129,6 +129,7 @@ export function Background() {
       motionPreset="drift"
       motionSpeed={38}
       motionIntensity={46}
+      androidCanvasFallback="auto"
       style={{ minHeight: "100vh" }}
     />
   );
@@ -138,11 +139,33 @@ export function Background() {
 Props:
 
 - All `createGrainGradientCSS` options
+- `androidCanvasFallback?: "auto" | "on" | "off"` — Built-in Canvas PNG fallback for the React helper on Android Chrome. `auto` detects Android Chrome after hydration; SSR renders SVG grain first, so there is no server-side `window`, `navigator`, or `canvas` access. The Canvas fallback uses `seed`, `frequency` / `baseFrequency`, and `contrast`; SVG-specific sizing options remain SVG-only.
+- `androidCanvasFallbackUserAgent?: string | null` — Optional SSR user-agent hint for `androidCanvasFallback="auto"`. Pass the request UA from frameworks such as Next.js so the post-hydration fallback decision matches server-known user-agent data.
 - `className?: string`
 - `style?: React.CSSProperties`
 - `children?: React.ReactNode`
 
 The component does not add text or UI by itself. If children are passed, they are rendered above the background layers.
+
+SSR framework example with Next.js App Router:
+
+```tsx
+import { headers } from "next/headers";
+import { GrainGradient } from "grain-gradient/react";
+
+export default async function Page() {
+  const userAgent = (await headers()).get("user-agent");
+
+  return (
+    <GrainGradient
+      androidCanvasFallback="auto"
+      androidCanvasFallbackUserAgent={userAgent}
+    />
+  );
+}
+```
+
+The user-agent hint is only used after hydration to decide whether to generate Canvas grain. The server render remains SVG-only to avoid hydration mismatches and server-side Canvas requirements.
 
 ### `useGrainGradient(options?)`
 
@@ -160,7 +183,7 @@ Return value:
 | --- | --- |
 | `rootStyle` | Relative/overflow-hidden container style |
 | `meshStyle` | Mesh layer style |
-| `grainStyle` | SVG turbulence grain layer style |
+| `grainStyle` | Active grain layer style. It starts as SVG turbulence and may switch to repeated Canvas PNG after hydration when `androidCanvasFallback` applies. |
 | `cssText` | Minimal mesh background CSS text |
 
 ## Presets
