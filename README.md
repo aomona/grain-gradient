@@ -15,11 +15,11 @@ npm i grain-gradient
 ## Core CSS
 
 ```ts
-import { createGrainGradientCSS, presets } from 'grain-gradient';
+import { createGrainGradientCSS, presets } from "grain-gradient";
 
 const css = createGrainGradientCSS({
-  ...presets['Aurora Citrus'],
-  motionPreset: 'drift',
+  ...presets["Aurora Citrus"],
+  motionPreset: "drift",
   motionSpeed: 38,
   motionIntensity: 46,
 });
@@ -34,7 +34,7 @@ See [API reference](./docs/API.md) for all core functions, React helpers, option
 ## React
 
 ```tsx
-import { GrainGradient } from 'grain-gradient/react';
+import { GrainGradient } from "grain-gradient/react";
 
 export function Hero() {
   return (
@@ -53,11 +53,11 @@ export function Hero() {
 For SSR frameworks, pass the request user agent as a hint so `auto` can use the same Android Chrome detection after hydration:
 
 ```tsx
-import { headers } from 'next/headers';
-import { GrainGradient } from 'grain-gradient/react';
+import { headers } from "next/headers";
+import { GrainGradient } from "grain-gradient/react";
 
 export default async function Page() {
-  const userAgent = (await headers()).get('user-agent');
+  const userAgent = (await headers()).get("user-agent");
 
   return <GrainGradient androidCanvasFallback="auto" androidCanvasFallbackUserAgent={userAgent} />;
 }

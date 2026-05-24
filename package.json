@@ -2,23 +2,26 @@
   "name": "grain-gradient",
   "version": "1.0.0",
   "description": "Lightweight TypeScript utilities for mesh and grain gradients.",
-  "type": "module",
+  "keywords": [
+    "background",
+    "gradient",
+    "grain",
+    "react",
+    "svg"
+  ],
+  "homepage": "https://github.com/aomona/grain-gradient#readme",
+  "bugs": {
+    "url": "https://github.com/aomona/grain-gradient/issues"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/aomona/grain-gradient.git"
   },
-  "bugs": {
-    "url": "https://github.com/aomona/grain-gradient/issues"
-  },
-  "homepage": "https://github.com/aomona/grain-gradient#readme",
-  "keywords": [
-    "gradient",
-    "grain",
-    "svg",
-    "background",
-    "react"
+  "files": [
+    "dist"
   ],
+  "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -32,22 +35,25 @@
       "import": "./dist/react.js"
     }
   },
-  "files": [
-    "dist"
-  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "vite",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint . --fix",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
     "pretest": "npm run build",
     "test": "node --test tests/*.test.mjs",
     "playground": "vite --open /playground/"
   },
-  "peerDependencies": {
-    "react": ">=18"
-  },
   "devDependencies": {
     "@types/react": "^18.3.3",
+    "oxfmt": "^0.51.0",
+    "oxlint": "^1.66.0",
     "typescript": "^5.5.4",
     "vite": "^8.0.14"
+  },
+  "peerDependencies": {
+    "react": ">=18"
   }
 }

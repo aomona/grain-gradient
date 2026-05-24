@@ -34,7 +34,8 @@ export interface MotionOptions {
   motionIntensity?: number;
 }
 
-export interface GrainGradientCSSOptions extends MeshGradientOptions, TurbulenceNoiseOptions, MotionOptions {
+export interface GrainGradientCSSOptions
+  extends MeshGradientOptions, TurbulenceNoiseOptions, MotionOptions {
   selector?: string;
   blendMode?: string;
 }
@@ -46,7 +47,9 @@ const encodeSvg = (svg: string) => `url("data:image/svg+xml,${encodeURIComponent
 const motionPresets = new Set<MotionPreset>(["none", "drift", "breathe", "orbit"]);
 
 const normalizeMotion = (options: MotionOptions = {}) => {
-  const preset = motionPresets.has(options.motionPreset as MotionPreset) ? (options.motionPreset as MotionPreset) : "none";
+  const preset = motionPresets.has(options.motionPreset as MotionPreset)
+    ? (options.motionPreset as MotionPreset)
+    : "none";
   const speed = clamp(options.motionSpeed ?? 0, 0, 100);
   const intensity = clamp(options.motionIntensity ?? 50, 0, 100);
   const enabled = preset !== "none" && speed > 0 && intensity > 0;
@@ -67,7 +70,8 @@ const normalizeMotion = (options: MotionOptions = {}) => {
   };
 };
 
-const keyframeName = (selector: string) => `grain-gradient-${selector.replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "motion"}`;
+const keyframeName = (selector: string) =>
+  `grain-gradient-${selector.replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "motion"}`;
 
 function createGrainGradientMotionCSS(options: GrainGradientCSSOptions = {}): string {
   const selector = options.selector ?? ".grain-gradient";
@@ -104,7 +108,9 @@ export function createTurbulenceNoise(options: TurbulenceNoiseOptions = {}): str
 }
 
 export function createMeshGradient(options: MeshGradientOptions = {}): string {
-  const colors = options.colors?.length ? options.colors : ["#7c3aed", "#06b6d4", "#f97316", "#f43f5e"];
+  const colors = options.colors?.length
+    ? options.colors
+    : ["#7c3aed", "#06b6d4", "#f97316", "#f43f5e"];
   const baseColor = options.baseColor ?? "#0b1020";
   const stops = colors.slice(0, 6);
   const positions = ["12% 18%", "86% 16%", "70% 82%", "20% 88%", "50% 46%", "18% 56%"];
@@ -160,7 +166,7 @@ export const presets = {
   "Blue Hour": { colors: ["#0f172a", "#2563eb", "#38bdf8", "#f8fafc"], baseColor: "#0f172a" },
   "Candy Fog": { colors: ["#ff70a6", "#ff9770", "#ffd670", "#70d6ff"], baseColor: "#1f1020" },
   "Forest Glass": { colors: ["#064e3b", "#10b981", "#bef264", "#fef3c7"], baseColor: "#064e3b" },
-  "Midnight Bloom": { colors: ["#111827", "#7c3aed", "#ec4899", "#fdf2f8"], baseColor: "#111827" }
+  "Midnight Bloom": { colors: ["#111827", "#7c3aed", "#ec4899", "#fdf2f8"], baseColor: "#111827" },
 } as const;
 
 export type GrainGradientPreset = (typeof presets)[keyof typeof presets];

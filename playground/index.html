@@ -4,18 +4,36 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>grain-gradient playground</title>
-    <meta name="description" content="Tune grain-gradient presets locally with a fast, dependency-free playground." />
+    <meta
+      name="description"
+      content="Tune grain-gradient presets locally with a fast, dependency-free playground."
+    />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="grain-gradient" />
     <meta property="og:title" content="grain-gradient playground" />
-    <meta property="og:description" content="Tune lightweight mesh gradients with SVG turbulence grain." />
+    <meta
+      property="og:description"
+      content="Tune lightweight mesh gradients with SVG turbulence grain."
+    />
     <meta property="og:url" content="https://aomona.github.io/grain-gradient/playground/" />
-    <meta property="og:image" content="https://aomona.github.io/grain-gradient/grain-gradient-og.png" />
-    <meta property="og:image:alt" content="grain-gradient playground showing a grainy mesh gradient preview and controls." />
+    <meta
+      property="og:image"
+      content="https://aomona.github.io/grain-gradient/grain-gradient-og.png"
+    />
+    <meta
+      property="og:image:alt"
+      content="grain-gradient playground showing a grainy mesh gradient preview and controls."
+    />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="grain-gradient playground" />
-    <meta name="twitter:description" content="Tune lightweight mesh gradients with SVG turbulence grain." />
-    <meta name="twitter:image" content="https://aomona.github.io/grain-gradient/grain-gradient-og.png" />
+    <meta
+      name="twitter:description"
+      content="Tune lightweight mesh gradients with SVG turbulence grain."
+    />
+    <meta
+      name="twitter:image"
+      content="https://aomona.github.io/grain-gradient/grain-gradient-og.png"
+    />
     <style>
       :root {
         color-scheme: dark;
@@ -32,15 +50,26 @@
         --danger: #fca5a5;
       }
 
-      * { box-sizing: border-box; }
+      * {
+        box-sizing: border-box;
+      }
 
-      html, body { height: 100%; }
+      html,
+      body {
+        height: 100%;
+      }
 
       body {
         margin: 0;
         background: var(--bg);
         color: var(--text);
-        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
       }
 
       .app {
@@ -93,7 +122,9 @@
         gap: 8px;
       }
 
-      .field + .field { margin-top: 10px; }
+      .field + .field {
+        margin-top: 10px;
+      }
 
       .label-row {
         display: flex;
@@ -147,7 +178,9 @@
         opacity: 0;
         pointer-events: none;
         transform: translateY(-4px);
-        transition: opacity 140ms ease, transform 140ms ease;
+        transition:
+          opacity 140ms ease,
+          transform 140ms ease;
       }
 
       .info-mark:hover::after,
@@ -232,17 +265,25 @@
         border-radius: 10px;
         padding: 10px 12px;
         cursor: pointer;
-        transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+        transition:
+          background 160ms ease,
+          border-color 160ms ease,
+          transform 160ms ease;
       }
 
-      button:hover { transform: translateY(-1px); background: #ffffff; }
+      button:hover {
+        transform: translateY(-1px);
+        background: #ffffff;
+      }
 
       button.secondary {
         background: transparent;
         color: var(--text);
       }
 
-      button.secondary:hover { background: var(--accent-soft); }
+      button.secondary:hover {
+        background: var(--accent-soft);
+      }
 
       button:disabled,
       input:disabled {
@@ -337,18 +378,39 @@
       }
 
       @keyframes mesh-drift {
-        from { transform: var(--mesh-transform) scale(var(--motion-zoom)) translate3d(calc(var(--motion-travel) * -1), calc(var(--motion-travel) * -1), 0); }
-        to { transform: var(--mesh-transform) scale(var(--motion-zoom)) translate3d(var(--motion-travel), var(--motion-travel), 0); }
+        from {
+          transform: var(--mesh-transform) scale(var(--motion-zoom))
+            translate3d(calc(var(--motion-travel) * -1), calc(var(--motion-travel) * -1), 0);
+        }
+        to {
+          transform: var(--mesh-transform) scale(var(--motion-zoom))
+            translate3d(var(--motion-travel), var(--motion-travel), 0);
+        }
       }
 
       @keyframes mesh-breathe {
-        from { transform: var(--mesh-transform); filter: var(--mesh-filter); }
-        to { transform: var(--mesh-transform) scale(var(--motion-zoom)); filter: var(--mesh-filter-strong); }
+        from {
+          transform: var(--mesh-transform);
+          filter: var(--mesh-filter);
+        }
+        to {
+          transform: var(--mesh-transform) scale(var(--motion-zoom));
+          filter: var(--mesh-filter-strong);
+        }
       }
 
       @keyframes mesh-orbit {
-        from { transform: var(--mesh-transform) scale(var(--motion-zoom)) rotate(calc(var(--motion-rotate) * -1)) translate3d(calc(var(--motion-travel) * -1), var(--motion-travel), 0); background-position: 46% 54%; }
-        to { transform: var(--mesh-transform) scale(var(--motion-zoom)) rotate(var(--motion-rotate)) translate3d(var(--motion-travel), calc(var(--motion-travel) * -1), 0); background-position: 54% 46%; }
+        from {
+          transform: var(--mesh-transform) scale(var(--motion-zoom))
+            rotate(calc(var(--motion-rotate) * -1))
+            translate3d(calc(var(--motion-travel) * -1), var(--motion-travel), 0);
+          background-position: 46% 54%;
+        }
+        to {
+          transform: var(--mesh-transform) scale(var(--motion-zoom)) rotate(var(--motion-rotate))
+            translate3d(var(--motion-travel), calc(var(--motion-travel) * -1), 0);
+          background-position: 54% 46%;
+        }
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -364,14 +426,26 @@
       }
 
       @media (max-width: 940px) {
-        .app { grid-template-columns: 1fr; }
-        .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
-        .preview { min-height: 68vh; }
+        .app {
+          grid-template-columns: 1fr;
+        }
+        .sidebar {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+        .preview {
+          min-height: 68vh;
+        }
       }
 
       @media (max-width: 560px) {
-        .sidebar { padding: 14px; }
-        .colors, .seed-grid { grid-template-columns: 1fr; }
+        .sidebar {
+          padding: 14px;
+        }
+        .colors,
+        .seed-grid {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
@@ -397,10 +471,22 @@
               <span class="value">4</span>
             </div>
             <div class="colors">
-              <label class="color-field"><span class="value">Color 1</span><input id="color-1" type="color" aria-label="Color 1" /></label>
-              <label class="color-field"><span class="value">Color 2</span><input id="color-2" type="color" aria-label="Color 2" /></label>
-              <label class="color-field"><span class="value">Color 3</span><input id="color-3" type="color" aria-label="Color 3" /></label>
-              <label class="color-field"><span class="value">Color 4</span><input id="color-4" type="color" aria-label="Color 4" /></label>
+              <label class="color-field"
+                ><span class="value">Color 1</span
+                ><input id="color-1" type="color" aria-label="Color 1"
+              /></label>
+              <label class="color-field"
+                ><span class="value">Color 2</span
+                ><input id="color-2" type="color" aria-label="Color 2"
+              /></label>
+              <label class="color-field"
+                ><span class="value">Color 3</span
+                ><input id="color-3" type="color" aria-label="Color 3"
+              /></label>
+              <label class="color-field"
+                ><span class="value">Color 4</span
+                ><input id="color-4" type="color" aria-label="Color 4"
+              /></label>
             </div>
           </div>
 
@@ -430,7 +516,9 @@
               <option value="breathe">Soft breathe</option>
               <option value="orbit">Gentle orbit</option>
             </select>
-            <p class="motion-help">Pick one preset for movement, then fine-tune speed and intensity.</p>
+            <p class="motion-help">
+              Pick one preset for movement, then fine-tune speed and intensity.
+            </p>
           </div>
 
           <div class="field">
@@ -494,7 +582,8 @@
                 tabindex="0"
                 data-tooltip="Android Chrome only can render SVG turbulence backgrounds with visible artifacts, so this switches the grain layer to a Canvas-generated PNG fallback."
                 aria-label="Android Chrome only can render SVG turbulence backgrounds with visible artifacts, so this switches the grain layer to a Canvas-generated PNG fallback."
-              >i</span>
+                >i</span
+              >
             </div>
             <select id="androidCanvasFallback">
               <option value="auto">auto</option>
@@ -576,7 +665,8 @@
 
       const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
-      const defaultMotionPreset = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "none" : "drift";
+      const defaultMotionPreset = () =>
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "none" : "drift";
 
       const setFeedback = (state, title, text, error = "") => {
         elements.feedback.dataset.state = state;
@@ -592,14 +682,21 @@
         const modulePath = import.meta.env?.DEV ? "../src/index.ts" : "../dist/index.js";
         api = await import(/* @vite-ignore */ modulePath);
       } catch (error) {
-        setFeedback("error", "Import failed", "Could not load grain-gradient module.", error?.stack || String(error));
+        setFeedback(
+          "error",
+          "Import failed",
+          "Could not load grain-gradient module.",
+          error?.stack || String(error),
+        );
         throw error;
       }
 
       const { createMeshGradient, createTurbulenceNoise, createGrainGradientCSS, presets } = api;
 
       const presetNames = Object.keys(presets);
-      elements.preset.innerHTML = presetNames.map((name) => `<option value="${name}">${name}</option>`).join("");
+      elements.preset.innerHTML = presetNames
+        .map((name) => `<option value="${name}">${name}</option>`)
+        .join("");
 
       const initialPreset = "Aurora Citrus";
       const initial = presets[initialPreset];
@@ -623,7 +720,11 @@
 
       const isAndroidChrome = () => {
         const ua = navigator.userAgent;
-        return /Android/i.test(ua) && /Chrome\//i.test(ua) && !/(; wv|Version\/|EdgA|OPR|SamsungBrowser|Firefox|CriOS)/i.test(ua);
+        return (
+          /Android/i.test(ua) &&
+          /Chrome\//i.test(ua) &&
+          !/(; wv|Version\/|EdgA|OPR|SamsungBrowser|Firefox|CriOS)/i.test(ua)
+        );
       };
 
       const useCanvasFallback = () => {
@@ -680,7 +781,9 @@
 
       const syncInputs = () => {
         elements.preset.value = state.preset;
-        elements.colors.forEach((input, index) => { input.value = state.colors[index]; });
+        elements.colors.forEach((input, index) => {
+          input.value = state.colors[index];
+        });
         elements.distortion.value = String(state.distortion);
         elements.swirl.value = String(state.swirl);
         elements.motionPreset.value = state.motionPreset;
@@ -698,7 +801,10 @@
       const syncLabels = () => {
         elements.distortionValue.textContent = `${state.distortion}`;
         elements.swirlValue.textContent = `${state.swirl}`;
-        elements.motionSpeedValue.textContent = state.motionPreset === "none" || state.motionSpeed === 0 ? "static" : `${state.motionSpeed}`;
+        elements.motionSpeedValue.textContent =
+          state.motionPreset === "none" || state.motionSpeed === 0
+            ? "static"
+            : `${state.motionSpeed}`;
         elements.motionIntensityValue.textContent = `${state.motionIntensity}`;
         elements.grainOpacityValue.textContent = format(state.grainOpacity, 2);
         elements.grainDensityValue.textContent = `${state.grainDensity}`;
@@ -736,7 +842,8 @@
 
           const swirlShift = state.swirl / 100;
           const swirlScale = 1 + state.swirl * 0.004;
-          const motionEnabled = state.motionPreset !== "none" && state.motionSpeed > 0 && state.motionIntensity > 0;
+          const motionEnabled =
+            state.motionPreset !== "none" && state.motionSpeed > 0 && state.motionIntensity > 0;
           const motionDuration = Math.max(10, Math.round(56 - state.motionSpeed * 0.46));
           const motionTravel = 4 + state.motionIntensity * 0.16;
           const motionZoom = 1 + state.motionIntensity * 0.0016;
@@ -753,7 +860,10 @@
           elements.meshLayer.style.filter = meshFilter;
           elements.meshLayer.style.transform = meshTransform;
           elements.meshLayer.style.setProperty("--mesh-filter", meshFilter);
-          elements.meshLayer.style.setProperty("--mesh-filter-strong", `blur(${Math.min(80, state.distortion * 0.75 + motionTravel)}px) saturate(${1.12 + state.distortion / 140}) contrast(${1.03 + state.distortion / 240})`);
+          elements.meshLayer.style.setProperty(
+            "--mesh-filter-strong",
+            `blur(${Math.min(80, state.distortion * 0.75 + motionTravel)}px) saturate(${1.12 + state.distortion / 140}) contrast(${1.03 + state.distortion / 240})`,
+          );
           elements.meshLayer.style.setProperty("--mesh-transform", meshTransform);
           elements.meshLayer.style.setProperty("--motion-duration", `${motionDuration}s`);
           elements.meshLayer.style.setProperty("--motion-travel", `${motionTravel}%`);
@@ -762,15 +872,20 @@
           elements.meshLayer.dataset.motion = motionEnabled ? state.motionPreset : "none";
 
           const canvasFallback = useCanvasFallback();
-          elements.grainLayer.style.backgroundImage =
-            canvasFallback
-              ? createCanvasNoise({ seed: state.seed, density: state.grainDensity, contrast: state.contrast })
-              : createTurbulenceNoise({
-                  seed: state.seed,
-                  frequency: grainFrequency,
-                  contrast: state.contrast,
-                });
-          elements.grainLayer.style.backgroundSize = canvasFallback ? `${canvasGrainSize}px ${canvasGrainSize}px` : "100% 100%";
+          elements.grainLayer.style.backgroundImage = canvasFallback
+            ? createCanvasNoise({
+                seed: state.seed,
+                density: state.grainDensity,
+                contrast: state.contrast,
+              })
+            : createTurbulenceNoise({
+                seed: state.seed,
+                frequency: grainFrequency,
+                contrast: state.contrast,
+              });
+          elements.grainLayer.style.backgroundSize = canvasFallback
+            ? `${canvasGrainSize}px ${canvasGrainSize}px`
+            : "100% 100%";
           elements.grainLayer.style.backgroundRepeat = canvasFallback ? "repeat" : "no-repeat";
           elements.grainLayer.style.imageRendering = canvasFallback ? "pixelated" : "auto";
           elements.grainLayer.style.opacity = String(state.grainOpacity);
@@ -784,7 +899,12 @@
           elements.meshLayer.style.filter = "none";
           elements.meshLayer.style.transform = "none";
           elements.grainLayer.style.backgroundImage = "none";
-          setFeedback("error", "Render failed", "The preview could not be rendered.", error?.stack || String(error));
+          setFeedback(
+            "error",
+            "Render failed",
+            "The preview could not be rendered.",
+            error?.stack || String(error),
+          );
         }
       };
 
@@ -893,7 +1013,12 @@
           setFeedback("ready", "Copied", "Export CSS copied to clipboard.");
           window.setTimeout(() => setFeedback("ready", "Ready", "Preview is live."), 1400);
         } catch (error) {
-          setFeedback("error", "Copy failed", "The browser blocked clipboard access.", error?.stack || String(error));
+          setFeedback(
+            "error",
+            "Copy failed",
+            "The browser blocked clipboard access.",
+            error?.stack || String(error),
+          );
         }
       });
     </script>

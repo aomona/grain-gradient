@@ -35,17 +35,17 @@ const noise = createTurbulenceNoise({
 
 Options:
 
-| Option | Default | Range / note |
-| --- | ---: | --- |
-| `frequency` | `1.25` | Clamped to `0.04` – `2.4` |
-| `baseFrequency` | — | Alias fallback for `frequency` |
-| `contrast` | `1.7` | Clamped to `1.0` – `2.5` |
-| `seed` | `1` | Clamped to `0` – `9999` |
-| `numOctaves` | `2` | Clamped to `1` – `5` |
-| `stitchTiles` | `true` | Uses SVG `stitchTiles` |
-| `width` | `3200` | SVG canvas width |
-| `height` | `2200` | SVG canvas height |
-| `size` | — | Fallback for both width and height |
+| Option          | Default | Range / note                       |
+| --------------- | ------: | ---------------------------------- |
+| `frequency`     |  `1.25` | Clamped to `0.04` – `2.4`          |
+| `baseFrequency` |       — | Alias fallback for `frequency`     |
+| `contrast`      |   `1.7` | Clamped to `1.0` – `2.5`           |
+| `seed`          |     `1` | Clamped to `0` – `9999`            |
+| `numOctaves`    |     `2` | Clamped to `1` – `5`               |
+| `stitchTiles`   |  `true` | Uses SVG `stitchTiles`             |
+| `width`         |  `3200` | SVG canvas width                   |
+| `height`        |  `2200` | SVG canvas height                  |
+| `size`          |       — | Fallback for both width and height |
 
 The core API always returns SVG turbulence noise. The playground and React helper can switch to a Canvas-generated PNG grain fallback on Android Chrome for device testing.
 
@@ -64,13 +64,13 @@ This returns only the background image value, not full CSS declarations.
 
 Options:
 
-| Option | Default | Note |
-| --- | --- | --- |
-| `colors` | `['#7c3aed', '#06b6d4', '#f97316', '#f43f5e']` | Uses up to 6 colors |
-| `baseColor` | `#0b1020` | Used in the base linear gradient |
-| `blur` | — | Used by CSS/React layer helpers, not the returned image string |
-| `saturation` | — | Used by CSS/React layer helpers |
-| `intensity` | — | Fallback alias for saturation in layer helpers |
+| Option       | Default                                        | Note                                                           |
+| ------------ | ---------------------------------------------- | -------------------------------------------------------------- |
+| `colors`     | `['#7c3aed', '#06b6d4', '#f97316', '#f43f5e']` | Uses up to 6 colors                                            |
+| `baseColor`  | `#0b1020`                                      | Used in the base linear gradient                               |
+| `blur`       | —                                              | Used by CSS/React layer helpers, not the returned image string |
+| `saturation` | —                                              | Used by CSS/React layer helpers                                |
+| `intensity`  | —                                              | Fallback alias for saturation in layer helpers                 |
 
 ### `createGrainGradientCSS(options?)`
 
@@ -90,14 +90,14 @@ const css = createGrainGradientCSS({
 
 Options include all `createMeshGradient` and `createTurbulenceNoise` options, plus:
 
-| Option | Default | Note |
-| --- | --- | --- |
-| `selector` | `.grain-gradient` | CSS selector for the generated snippet |
-| `opacity` | `0.34` | Grain layer opacity |
-| `blendMode` | `overlay` | Grain layer `mix-blend-mode` |
-| `motionPreset` | `none` | `none`, `drift`, `breathe`, or `orbit` |
-| `motionSpeed` | `0` | `0` – `100`; `0` disables animation |
-| `motionIntensity` | `50` | `0` – `100`; controls travel/zoom strength |
+| Option            | Default           | Note                                       |
+| ----------------- | ----------------- | ------------------------------------------ |
+| `selector`        | `.grain-gradient` | CSS selector for the generated snippet     |
+| `opacity`         | `0.34`            | Grain layer opacity                        |
+| `blendMode`       | `overlay`         | Grain layer `mix-blend-mode`               |
+| `motionPreset`    | `none`            | `none`, `drift`, `breathe`, or `orbit`     |
+| `motionSpeed`     | `0`               | `0` – `100`; `0` disables animation        |
+| `motionIntensity` | `50`              | `0` – `100`; controls travel/zoom strength |
 
 The generated grain layer uses:
 
@@ -156,12 +156,7 @@ import { GrainGradient } from "grain-gradient/react";
 export default async function Page() {
   const userAgent = (await headers()).get("user-agent");
 
-  return (
-    <GrainGradient
-      androidCanvasFallback="auto"
-      androidCanvasFallbackUserAgent={userAgent}
-    />
-  );
+  return <GrainGradient androidCanvasFallback="auto" androidCanvasFallbackUserAgent={userAgent} />;
 }
 ```
 
@@ -179,12 +174,12 @@ const { rootStyle, meshStyle, grainStyle, cssText } = useGrainGradient({
 
 Return value:
 
-| Key | Description |
-| --- | --- |
-| `rootStyle` | Relative/overflow-hidden container style |
-| `meshStyle` | Mesh layer style |
+| Key          | Description                                                                                                                                       |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rootStyle`  | Relative/overflow-hidden container style                                                                                                          |
+| `meshStyle`  | Mesh layer style                                                                                                                                  |
 | `grainStyle` | Active grain layer style. It starts as SVG turbulence and may switch to repeated Canvas PNG after hydration when `androidCanvasFallback` applies. |
-| `cssText` | Minimal mesh background CSS text |
+| `cssText`    | Minimal mesh background CSS text                                                                                                                  |
 
 ## Presets
 
