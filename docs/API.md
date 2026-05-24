@@ -199,6 +199,7 @@ Props:
 - `children?: React.ReactNode`
 
 The component does not add text or UI by itself. If children are passed, they are rendered above the background layers.
+When layering children, keep decorative layers `aria-hidden` and raise interactive/content children with `position`/`z-index` as needed so they remain accessible and clickable.
 
 SSR framework example with Next.js App Router:
 
