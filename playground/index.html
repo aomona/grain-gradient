@@ -145,50 +145,6 @@
         font-variant-numeric: tabular-nums;
       }
 
-      .info-mark {
-        position: relative;
-        display: inline-grid;
-        place-items: center;
-        width: 18px;
-        height: 18px;
-        border: 1px solid var(--line-strong);
-        border-radius: 999px;
-        color: var(--muted);
-        font-size: 0.72rem;
-        line-height: 1;
-        cursor: help;
-      }
-
-      .info-mark::after {
-        content: attr(data-tooltip);
-        position: absolute;
-        right: 0;
-        top: calc(100% + 8px);
-        z-index: 10;
-        width: min(280px, 78vw);
-        border: 1px solid var(--line-strong);
-        border-radius: 10px;
-        background: #101012;
-        color: var(--text);
-        padding: 10px 12px;
-        font-size: 0.76rem;
-        line-height: 1.45;
-        text-align: left;
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
-        opacity: 0;
-        pointer-events: none;
-        transform: translateY(-4px);
-        transition:
-          opacity 140ms ease,
-          transform 140ms ease;
-      }
-
-      .info-mark:hover::after,
-      .info-mark:focus-visible::after {
-        opacity: 1;
-        transform: translateY(0);
-      }
-
       select,
       input,
       button {
@@ -329,100 +285,6 @@
         min-height: 100vh;
         overflow: hidden;
         background: #050505;
-      }
-
-      #meshLayer,
-      #grainLayer {
-        position: absolute;
-        pointer-events: none;
-      }
-
-      #meshLayer {
-        inset: -18%;
-        transform-origin: 50% 50%;
-        backface-visibility: hidden;
-        will-change: transform;
-        background-color: #0b0b0c;
-        background-image:
-          radial-gradient(circle at 12% 18%, #c2e812 0, transparent 34%),
-          radial-gradient(circle at 86% 16%, #ff7f11 0, transparent 32%),
-          radial-gradient(circle at 70% 82%, #ee4266 0, transparent 36%),
-          radial-gradient(circle at 20% 88%, #2a1e5c 0, transparent 32%),
-          linear-gradient(135deg, #c2e812, #ff7f11, #ee4266, #2a1e5c, #0f1020);
-        background-size: 120% 120%;
-        background-position: center;
-        filter: blur(36px) saturate(1.2);
-        transform: scale(1.12);
-      }
-
-      #grainLayer {
-        inset: -8%;
-        mix-blend-mode: overlay;
-        opacity: 0.34;
-        background-repeat: no-repeat;
-        background-size: 100% 100%;
-        background-position: center;
-        will-change: background-image, opacity, mix-blend-mode;
-      }
-
-      #meshLayer[data-motion="drift"] {
-        animation: mesh-drift var(--motion-duration, 32s) ease-in-out infinite alternate;
-      }
-
-      #meshLayer[data-motion="breathe"] {
-        animation: mesh-breathe var(--motion-duration, 32s) ease-in-out infinite alternate;
-      }
-
-      #meshLayer[data-motion="orbit"] {
-        animation: mesh-orbit var(--motion-duration, 32s) ease-in-out infinite alternate;
-      }
-
-      @keyframes mesh-drift {
-        from {
-          transform: var(--mesh-transform) scale(var(--motion-zoom))
-            translate3d(calc(var(--motion-travel) * -1), calc(var(--motion-travel) * -1), 0);
-        }
-        to {
-          transform: var(--mesh-transform) scale(var(--motion-zoom))
-            translate3d(var(--motion-travel), var(--motion-travel), 0);
-        }
-      }
-
-      @keyframes mesh-breathe {
-        from {
-          transform: var(--mesh-transform);
-          filter: var(--mesh-filter);
-        }
-        to {
-          transform: var(--mesh-transform) scale(var(--motion-zoom));
-          filter: var(--mesh-filter-strong);
-        }
-      }
-
-      @keyframes mesh-orbit {
-        from {
-          transform: var(--mesh-transform) scale(var(--motion-zoom))
-            rotate(calc(var(--motion-rotate) * -1))
-            translate3d(calc(var(--motion-travel) * -1), var(--motion-travel), 0);
-          background-position: 46% 54%;
-        }
-        to {
-          transform: var(--mesh-transform) scale(var(--motion-zoom)) rotate(var(--motion-rotate))
-            translate3d(var(--motion-travel), calc(var(--motion-travel) * -1), 0);
-          background-position: 54% 46%;
-        }
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        #meshLayer {
-          animation: none !important;
-        }
-      }
-
-      .preview-fallback {
-        position: absolute;
-        inset: 0;
-        background: #0b0b0c;
       }
 
       @media (max-width: 940px) {
@@ -576,24 +438,6 @@
 
           <div class="field">
             <div class="label-row">
-              <label for="androidCanvasFallback">Android canvas fallback</label>
-              <span
-                class="info-mark"
-                tabindex="0"
-                data-tooltip="Android Chrome only can render SVG turbulence backgrounds with visible artifacts, so this switches the grain layer to a Canvas-generated PNG fallback."
-                aria-label="Android Chrome only can render SVG turbulence backgrounds with visible artifacts, so this switches the grain layer to a Canvas-generated PNG fallback."
-                >i</span
-              >
-            </div>
-            <select id="androidCanvasFallback">
-              <option value="auto">auto</option>
-              <option value="off">off</option>
-              <option value="on">on</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <div class="label-row">
               <label for="seedRange">Seed</label>
               <span class="value" id="seed-value"></span>
             </div>
@@ -616,10 +460,8 @@
         </section>
       </aside>
 
-      <main class="preview" aria-label="Live background preview">
-        <div id="meshLayer"></div>
-        <div id="grainLayer"></div>
-      </main>
+      <main class="preview" aria-label="Live background preview"></main>
+      <style id="previewCss"></style>
     </div>
 
     <script type="module">
@@ -637,7 +479,6 @@
         grainDensity: $("grainDensity"),
         contrast: $("contrast"),
         blendMode: $("blendMode"),
-        androidCanvasFallback: $("androidCanvasFallback"),
         seedRange: $("seedRange"),
         seedNumber: $("seedNumber"),
         copyCss: $("copyCss"),
@@ -654,8 +495,7 @@
         grainDensityValue: $("grainDensity-value"),
         contrastValue: $("contrast-value"),
         seedValue: $("seed-value"),
-        meshLayer: $("meshLayer"),
-        grainLayer: $("grainLayer"),
+        previewCss: $("previewCss"),
       };
 
       const format = (value, digits = 2) => {
@@ -691,7 +531,7 @@
         throw error;
       }
 
-      const { createMeshGradient, createTurbulenceNoise, createGrainGradientCSS, presets } = api;
+      const { createGrainGradientCSS, presets } = api;
 
       const presetNames = Object.keys(presets);
       elements.preset.innerHTML = presetNames
@@ -715,68 +555,11 @@
         motionPreset: defaultMotionPreset(),
         motionSpeed: 38,
         motionIntensity: 46,
-        androidCanvasFallback: "auto",
-      };
-
-      const isAndroidChrome = () => {
-        const ua = navigator.userAgent;
-        return (
-          /Android/i.test(ua) &&
-          /Chrome\//i.test(ua) &&
-          !/(; wv|Version\/|EdgA|OPR|SamsungBrowser|Firefox|CriOS)/i.test(ua)
-        );
-      };
-
-      const useCanvasFallback = () => {
-        if (state.androidCanvasFallback === "on") return true;
-        if (state.androidCanvasFallback === "off") return false;
-        return isAndroidChrome();
       };
 
       const densityToFrequency = (density) => {
         const progress = clamp(density, 0, 100) / 100;
         return 0.04 + progress * progress * (2.4 - 0.04);
-      };
-
-      const densityToCanvasSize = (density) => Math.round(720 - clamp(density, 0, 100) * 5.8);
-
-      const createCanvasNoise = ({ seed, density, contrast }) => {
-        const size = 1024;
-        const canvas = document.createElement("canvas");
-        canvas.width = size;
-        canvas.height = size;
-        const context = canvas.getContext("2d", { alpha: false });
-        const image = context.createImageData(size, size);
-        let value = Math.floor(Number.isFinite(seed) ? seed : 1) >>> 0;
-        const nextRandom = () => {
-          value = (value * 1664525 + 1013904223) >>> 0;
-          return value / 4294967296;
-        };
-        const threshold = 0.5;
-        const grainContrast = clamp(contrast / 2.5, 0.35, 1);
-        const blockSize = Math.max(1, Math.round(2.25 - (clamp(density, 0, 100) / 100) * 1.25));
-
-        for (let y = 0; y < size; y += blockSize) {
-          for (let x = 0; x < size; x += blockSize) {
-            const bit = nextRandom() > threshold ? 1 : 0;
-            const channel = Math.round(128 + (bit ? 127 : -127) * grainContrast);
-            for (let yy = 0; yy < blockSize; yy++) {
-              for (let xx = 0; xx < blockSize; xx++) {
-                const px = x + xx;
-                const py = y + yy;
-                if (px >= size || py >= size) continue;
-                const offset = (py * size + px) * 4;
-                image.data[offset] = channel;
-                image.data[offset + 1] = channel;
-                image.data[offset + 2] = channel;
-                image.data[offset + 3] = 255;
-              }
-            }
-          }
-        }
-
-        context.putImageData(image, 0, 0);
-        return `url("${canvas.toDataURL("image/png")}")`;
       };
 
       const syncInputs = () => {
@@ -795,7 +578,6 @@
         elements.seedRange.value = String(state.seed);
         elements.seedNumber.value = String(state.seed);
         elements.blendMode.value = state.blendMode;
-        elements.androidCanvasFallback.value = state.androidCanvasFallback;
       };
 
       const syncLabels = () => {
@@ -830,75 +612,31 @@
         render();
       };
 
+      const createPreviewOptions = () => ({
+        selector: ".preview",
+        colors: state.colors,
+        baseColor: state.baseColor,
+        blur: 8 + state.distortion * 0.65,
+        intensity: 1.05 + state.distortion / 110,
+        saturation: 1 + state.distortion / 160,
+        swirl: state.swirl,
+        seed: state.seed,
+        frequency: densityToFrequency(state.grainDensity),
+        contrast: state.contrast,
+        opacity: state.grainOpacity,
+        blendMode: state.blendMode,
+        motionPreset: state.motionPreset,
+        motionSpeed: state.motionSpeed,
+        motionIntensity: state.motionIntensity,
+      });
+
       const render = () => {
         try {
-          const meshBackground = createMeshGradient({
-            colors: state.colors,
-            baseColor: state.baseColor,
-            blur: 8 + state.distortion * 0.65,
-            intensity: 1.05 + state.distortion / 110,
-            saturation: 1 + state.distortion / 160,
-          });
-
-          const swirlShift = state.swirl / 100;
-          const swirlScale = 1 + state.swirl * 0.004;
-          const motionEnabled =
-            state.motionPreset !== "none" && state.motionSpeed > 0 && state.motionIntensity > 0;
-          const motionDuration = Math.max(10, Math.round(56 - state.motionSpeed * 0.46));
-          const motionTravel = 4 + state.motionIntensity * 0.16;
-          const motionZoom = 1 + state.motionIntensity * 0.0016;
-          const motionRotate = state.motionIntensity * 0.12;
-          const grainFrequency = densityToFrequency(state.grainDensity);
-          const canvasGrainSize = densityToCanvasSize(state.grainDensity);
-          const meshFilter = `blur(${state.distortion * 0.75}px) saturate(${1.05 + state.distortion / 160}) contrast(${1 + state.distortion / 260})`;
-          const meshTransform = `scale(${swirlScale}) rotate(${state.swirl * 0.12}deg)`;
-
-          elements.meshLayer.style.backgroundImage = meshBackground;
-          elements.meshLayer.style.backgroundRepeat = "no-repeat";
-          elements.meshLayer.style.backgroundSize = `${100 + state.swirl * 0.55}% ${100 + state.swirl * 0.4}%`;
-          elements.meshLayer.style.backgroundPosition = `${50 + swirlShift * 12}% ${50 - swirlShift * 10}%`;
-          elements.meshLayer.style.filter = meshFilter;
-          elements.meshLayer.style.transform = meshTransform;
-          elements.meshLayer.style.setProperty("--mesh-filter", meshFilter);
-          elements.meshLayer.style.setProperty(
-            "--mesh-filter-strong",
-            `blur(${Math.min(80, state.distortion * 0.75 + motionTravel)}px) saturate(${1.12 + state.distortion / 140}) contrast(${1.03 + state.distortion / 240})`,
-          );
-          elements.meshLayer.style.setProperty("--mesh-transform", meshTransform);
-          elements.meshLayer.style.setProperty("--motion-duration", `${motionDuration}s`);
-          elements.meshLayer.style.setProperty("--motion-travel", `${motionTravel}%`);
-          elements.meshLayer.style.setProperty("--motion-zoom", `${motionZoom}`);
-          elements.meshLayer.style.setProperty("--motion-rotate", `${motionRotate}deg`);
-          elements.meshLayer.dataset.motion = motionEnabled ? state.motionPreset : "none";
-
-          const canvasFallback = useCanvasFallback();
-          elements.grainLayer.style.backgroundImage = canvasFallback
-            ? createCanvasNoise({
-                seed: state.seed,
-                density: state.grainDensity,
-                contrast: state.contrast,
-              })
-            : createTurbulenceNoise({
-                seed: state.seed,
-                frequency: grainFrequency,
-                contrast: state.contrast,
-              });
-          elements.grainLayer.style.backgroundSize = canvasFallback
-            ? `${canvasGrainSize}px ${canvasGrainSize}px`
-            : "100% 100%";
-          elements.grainLayer.style.backgroundRepeat = canvasFallback ? "repeat" : "no-repeat";
-          elements.grainLayer.style.imageRendering = canvasFallback ? "pixelated" : "auto";
-          elements.grainLayer.style.opacity = String(state.grainOpacity);
-          elements.grainLayer.style.mixBlendMode = state.blendMode;
-          elements.grainLayer.dataset.motion = "none";
-
+          elements.previewCss.textContent = createGrainGradientCSS(createPreviewOptions());
           syncLabels();
-          setFeedback("ready", "Ready", "Preview is live.");
+          setFeedback("ready", "Ready", "Preview is rendered with the exported core CSS.");
         } catch (error) {
-          elements.meshLayer.style.backgroundImage = "none";
-          elements.meshLayer.style.filter = "none";
-          elements.meshLayer.style.transform = "none";
-          elements.grainLayer.style.backgroundImage = "none";
+          elements.previewCss.textContent = "";
           setFeedback(
             "error",
             "Render failed",
@@ -965,11 +703,6 @@
         render();
       });
 
-      elements.androidCanvasFallback.addEventListener("change", (event) => {
-        state.androidCanvasFallback = event.target.value;
-        render();
-      });
-
       elements.seedRange.addEventListener("input", (event) => syncSeed(event.target.value));
       elements.seedNumber.addEventListener("input", (event) => syncSeed(event.target.value));
 
@@ -985,7 +718,6 @@
         state.motionPreset = defaultMotionPreset();
         state.motionSpeed = 38;
         state.motionIntensity = 46;
-        state.androidCanvasFallback = "auto";
         syncInputs();
         render();
       });
@@ -993,21 +725,8 @@
       elements.copyCss.addEventListener("click", async () => {
         try {
           const css = createGrainGradientCSS({
+            ...createPreviewOptions(),
             selector: ".grain-gradient",
-            colors: state.colors,
-            baseColor: state.baseColor,
-            blur: 8 + state.distortion * 0.65,
-            intensity: 1.05 + state.distortion / 110,
-            saturation: 1 + state.distortion / 160,
-            swirl: state.swirl,
-            seed: state.seed,
-            frequency: densityToFrequency(state.grainDensity),
-            contrast: state.contrast,
-            opacity: state.grainOpacity,
-            blendMode: state.blendMode,
-            motionPreset: state.motionPreset,
-            motionSpeed: state.motionSpeed,
-            motionIntensity: state.motionIntensity,
           });
 
           await navigator.clipboard.writeText(css);
