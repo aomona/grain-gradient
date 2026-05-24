@@ -8,6 +8,7 @@ import {
   type CanvasGrainStyle,
   type GrainGradientCSSOptions,
 } from "./core.js";
+import { createSwirlTransform, normalizeMotion, normalizeSwirl } from "./internal.js";
 
 export type { AndroidCanvasFallback } from "./core.js";
 
@@ -23,29 +24,10 @@ export interface GrainGradientProps extends GrainGradientReactOptions {
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-
-const normalizeSwirl = (swirl = 0) => {
-  const value = clamp(swirl, 0, 100);
-  const shift = value / 100;
-  return {
-    value,
-    enabled: value > 0,
-    scale: Number((1 + value * 0.004).toFixed(3)),
-    rotate: Number((value * 0.12).toFixed(2)),
-    offsetX: Number((shift * 12).toFixed(1)),
-    offsetY: Number((shift * -10).toFixed(1)),
-    backgroundSizeX: Number((100 + value * 0.55).toFixed(1)),
-    backgroundSizeY: Number((100 + value * 0.4).toFixed(1)),
-    backgroundPositionX: Number((50 + shift * 12).toFixed(1)),
-    backgroundPositionY: Number((50 - shift * 10).toFixed(1)),
-  };
-};
-
-const createSwirlTransform = (swirl: ReturnType<typeof normalizeSwirl>) =>
-  swirl.enabled ? ` scale(${swirl.scale}) rotate(${swirl.rotate}deg)` : "";
+const createGrainGradientOptionKey = (parts: readonly unknown[]) => JSON.stringify(parts);
 
 export function useGrainGradient(options: GrainGradientReactOptions = {}) {
-  const meshKey = JSON.stringify([
+  const meshKey = createGrainGradientOptionKey([
     options.colors,
     options.baseColor,
     options.intensity,
@@ -53,7 +35,7 @@ export function useGrainGradient(options: GrainGradientReactOptions = {}) {
     options.blur,
     options.swirl,
   ]);
-  const grainKey = JSON.stringify([
+  const grainKey = createGrainGradientOptionKey([
     options.seed,
     options.frequency,
     options.baseFrequency,
@@ -64,7 +46,7 @@ export function useGrainGradient(options: GrainGradientReactOptions = {}) {
     options.size,
     options.stitchTiles,
   ]);
-  const motionKey = JSON.stringify([
+  const motionKey = createGrainGradientOptionKey([
     options.motionPreset,
     options.motionSpeed,
     options.motionIntensity,
@@ -85,25 +67,7 @@ export function useGrainGradient(options: GrainGradientReactOptions = {}) {
   const usesCanvasFallback = Boolean(canvasGrainStyle);
   const activeGrainUrl = canvasGrainStyle?.backgroundImage ?? grainUrl;
   const cssText = useMemo(() => `background-image: ${meshCss};`, [meshCss]);
-  const motion = useMemo(() => {
-    const allowed = new Set(["none", "drift", "breathe", "orbit"]);
-    const preset = allowed.has(options.motionPreset ?? "none")
-      ? (options.motionPreset ?? "none")
-      : "none";
-    const speed = Math.max(0, Math.min(100, options.motionSpeed ?? 0));
-    const intensity = Math.max(0, Math.min(100, options.motionIntensity ?? 50));
-    const enabled = preset !== "none" && speed > 0 && intensity > 0;
-    const duration = Math.max(10, Math.round(56 - speed * 0.46));
-    return {
-      preset,
-      enabled,
-      duration,
-      travel: 4 + intensity * 0.16,
-      zoom: 1.12 + intensity * 0.0018,
-      rotate: intensity * 0.12,
-      grainShift: 2 + intensity * 0.08,
-    };
-  }, [motionKey]);
+  const motion = useMemo(() => normalizeMotion(options), [motionKey]);
   const swirl = useMemo(() => normalizeSwirl(options.swirl), [options.swirl]);
   const swirlTransform = createSwirlTransform(swirl);
   const meshStyle = useMemo(
