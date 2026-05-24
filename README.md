@@ -78,6 +78,14 @@ export default async function Page() {
 
 React is a peer dependency via the `grain-gradient/react` subpath.
 
+## Development
+
+- `npm run build`: compile the TypeScript source to `dist/`
+- `npm run test`: run the Node test suite after building
+- `npm run lint`: check the codebase with oxlint
+- `npm run format:check`: verify formatting with oxfmt
+- `npm run playground`: open the Vite playground at `/playground/`
+
 ## Local playground
 
 Run the Vite-powered playground with hot reload:
