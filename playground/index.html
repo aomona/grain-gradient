@@ -73,7 +73,7 @@
       }
 
       .app {
-        min-height: 100vh;
+        height: 100vh;
         display: grid;
         grid-template-columns: 340px minmax(0, 1fr);
         overflow: hidden;
@@ -200,6 +200,12 @@
         grid-template-columns: 1fr 92px;
       }
 
+      .export-grid {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
       .motion-help {
         margin: -2px 0 0;
         color: var(--muted);
@@ -289,11 +295,15 @@
 
       @media (max-width: 940px) {
         .app {
+          height: auto;
+          min-height: 100vh;
           grid-template-columns: 1fr;
+          overflow: visible;
         }
         .sidebar {
           border-right: 0;
           border-bottom: 1px solid var(--line);
+          overflow: visible;
         }
         .preview {
           min-height: 68vh;
@@ -305,7 +315,8 @@
           padding: 14px;
         }
         .colors,
-        .seed-grid {
+        .seed-grid,
+        .export-grid {
           grid-template-columns: 1fr;
         }
       }
@@ -467,6 +478,27 @@
             <button id="reset" class="secondary" type="button">Reset preset</button>
           </div>
 
+          <div class="field">
+            <div class="label-row">
+              <label>PNG export size</label>
+              <span class="value" id="export-size-value"></span>
+            </div>
+            <div class="export-grid">
+              <label class="color-field"
+                ><span class="value">Width</span
+                ><input id="exportWidth" type="number" min="64" max="8192" step="1"
+              /></label>
+              <label class="color-field"
+                ><span class="value">Height</span
+                ><input id="exportHeight" type="number" min="64" max="8192" step="1"
+              /></label>
+            </div>
+          </div>
+
+          <div class="button-row">
+            <button id="exportPng" type="button">Export PNG</button>
+          </div>
+
           <div class="feedback" id="feedback" data-state="ready" aria-live="polite">
             <strong id="feedback-title">Ready</strong>
             <p id="feedback-text">Preview is live.</p>
@@ -497,12 +529,17 @@
         androidCanvasFallback: $("androidCanvasFallback"),
         seedRange: $("seedRange"),
         seedNumber: $("seedNumber"),
+        exportWidth: $("exportWidth"),
+        exportHeight: $("exportHeight"),
+        exportSizeValue: $("export-size-value"),
         copyCss: $("copyCss"),
+        exportPng: $("exportPng"),
         reset: $("reset"),
         feedback: $("feedback"),
         feedbackTitle: $("feedback-title"),
         feedbackText: $("feedback-text"),
         feedbackError: $("feedback-error"),
+        preview: document.querySelector(".preview"),
         distortionValue: $("distortion-value"),
         swirlValue: $("swirl-value"),
         motionSpeedValue: $("motionSpeed-value"),
@@ -564,7 +601,7 @@
         distortion: 44,
         swirl: 30,
         grainOpacity: 0.34,
-        grainDensity: 90,
+        grainDensity: 96,
         contrast: 1.7,
         seed: 1,
         blendMode: "overlay",
@@ -572,6 +609,8 @@
         motionPreset: defaultMotionPreset(),
         motionSpeed: 38,
         motionIntensity: 46,
+        exportWidth: 1920,
+        exportHeight: 1080,
       };
 
       const densityToFrequency = (density) => {
@@ -594,6 +633,8 @@
         elements.contrast.value = String(state.contrast);
         elements.seedRange.value = String(state.seed);
         elements.seedNumber.value = String(state.seed);
+        elements.exportWidth.value = String(state.exportWidth);
+        elements.exportHeight.value = String(state.exportHeight);
         elements.blendMode.value = state.blendMode;
         elements.androidCanvasFallback.value = state.androidCanvasFallback;
       };
@@ -610,6 +651,7 @@
         elements.grainDensityValue.textContent = `${state.grainDensity}`;
         elements.contrastValue.textContent = format(state.contrast, 2);
         elements.seedValue.textContent = String(state.seed);
+        elements.exportSizeValue.textContent = `${state.exportWidth} × ${state.exportHeight}`;
       };
 
       const applyPreset = (name) => {
@@ -630,8 +672,8 @@
         render();
       };
 
-      const createPreviewOptions = () => ({
-        selector: ".preview",
+      const createPreviewOptions = (selector = ".preview") => ({
+        selector,
         colors: state.colors,
         baseColor: state.baseColor,
         blur: 8 + state.distortion * 0.65,
@@ -655,6 +697,147 @@
         });
         if (!fallbackStyle) return "";
         return `\n\n.preview::after {\n  background-image: ${fallbackStyle.backgroundImage};\n  background-size: ${fallbackStyle.backgroundSize};\n  background-repeat: ${fallbackStyle.backgroundRepeat};\n  image-rendering: ${fallbackStyle.imageRendering};\n}`;
+      };
+
+      const parseExportSize = (value, fallback) => {
+        if (value === "") return fallback;
+        return clamp(Math.round(Number(value) || fallback), 64, 8192);
+      };
+
+      const syncExportSize = (key, value, commit = false) => {
+        state[key] = parseExportSize(value, state[key]);
+        if (commit) {
+          elements.exportWidth.value = String(state.exportWidth);
+          elements.exportHeight.value = String(state.exportHeight);
+        }
+        syncLabels();
+      };
+
+      const downloadBlob = (blob, filename) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      };
+
+      const createCanvas = (width, height) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        return canvas;
+      };
+
+      const drawMesh = (context, width, height) => {
+        const inset = 0.18;
+        const meshWidth = Math.ceil(width * (1 + inset * 2));
+        const meshHeight = Math.ceil(height * (1 + inset * 2));
+        const mesh = createCanvas(meshWidth, meshHeight);
+        const meshContext = mesh.getContext("2d");
+        if (!meshContext) throw new Error("Canvas is not available in this browser.");
+
+        const linear = meshContext.createLinearGradient(0, 0, meshWidth, meshHeight);
+        state.colors.forEach((color, index) => {
+          linear.addColorStop(index / Math.max(state.colors.length - 1, 1), color);
+        });
+        linear.addColorStop(1, state.baseColor);
+        meshContext.fillStyle = linear;
+        meshContext.fillRect(0, 0, meshWidth, meshHeight);
+
+        const positions = [
+          [0.12, 0.18],
+          [0.86, 0.16],
+          [0.7, 0.82],
+          [0.2, 0.88],
+          [0.5, 0.46],
+          [0.18, 0.56],
+        ];
+        const sizes = [0.34, 0.32, 0.36, 0.32, 0.3, 0.28];
+        const swirlOffset = ((state.swirl - 50) / 50) * 0.08;
+
+        state.colors.slice(0, 6).forEach((color, index) => {
+          const position = positions[index] ?? positions[positions.length - 1];
+          const x = (position[0] + swirlOffset) * meshWidth;
+          const y = (position[1] - swirlOffset) * meshHeight;
+          const radius =
+            Math.max(meshWidth, meshHeight) * (sizes[index] ?? sizes[sizes.length - 1]);
+          const gradient = meshContext.createRadialGradient(x, y, 0, x, y, radius);
+          gradient.addColorStop(0, color);
+          gradient.addColorStop(1, "transparent");
+          meshContext.fillStyle = gradient;
+          meshContext.fillRect(0, 0, meshWidth, meshHeight);
+        });
+
+        context.save();
+        context.filter = `blur(${8 + state.distortion * 0.65}px) saturate(${1 + state.distortion / 160})`;
+        context.translate(width / 2, height / 2);
+        context.rotate((state.swirl / 100) * 0.18 - 0.05);
+        context.scale(1.12, 1.12);
+        context.drawImage(mesh, -meshWidth / 2, -meshHeight / 2, meshWidth, meshHeight);
+        context.restore();
+      };
+
+      const drawGrain = (context, width, height) => {
+        const grain = createCanvas(width, height);
+        const grainContext = grain.getContext("2d");
+        if (!grainContext) throw new Error("Canvas is not available in this browser.");
+        const image = grainContext.createImageData(width, height);
+        let value = Math.floor(clamp(state.seed, 0, 9999)) >>> 0;
+        const nextRandom = () => {
+          value = (value * 1664525 + 1013904223) >>> 0;
+          return value / 4294967296;
+        };
+        const frequency = densityToFrequency(state.grainDensity);
+        const density = (frequency - 0.04) / (2.4 - 0.04);
+        const blockSize = Math.max(1, Math.round(4 - density * 3));
+        const contrast = clamp(state.contrast / 2.5, 0.35, 1);
+
+        for (let y = 0; y < height; y += blockSize) {
+          for (let x = 0; x < width; x += blockSize) {
+            const bit = nextRandom() > 0.5 ? 1 : 0;
+            const channel = Math.round(128 + (bit ? 127 : -127) * contrast);
+            for (let yy = 0; yy < blockSize; yy++) {
+              for (let xx = 0; xx < blockSize; xx++) {
+                const px = x + xx;
+                const py = y + yy;
+                if (px >= width || py >= height) continue;
+                const offset = (py * width + px) * 4;
+                image.data[offset] = channel;
+                image.data[offset + 1] = channel;
+                image.data[offset + 2] = channel;
+                image.data[offset + 3] = 255;
+              }
+            }
+          }
+        }
+
+        grainContext.putImageData(image, 0, 0);
+        context.save();
+        context.globalAlpha = state.grainOpacity;
+        context.globalCompositeOperation =
+          state.blendMode === "normal" ? "source-over" : state.blendMode;
+        context.drawImage(grain, 0, 0);
+        context.restore();
+      };
+
+      const exportPng = async () => {
+        syncExportSize("exportWidth", elements.exportWidth.value, true);
+        syncExportSize("exportHeight", elements.exportHeight.value, true);
+        const width = clamp(state.exportWidth, 64, 8192);
+        const height = clamp(state.exportHeight, 64, 8192);
+        const canvas = createCanvas(width, height);
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("Canvas is not available in this browser.");
+        context.fillStyle = state.baseColor;
+        context.fillRect(0, 0, width, height);
+        drawMesh(context, width, height);
+        drawGrain(context, width, height);
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+        if (!blob) throw new Error("Could not encode PNG export.");
+        downloadBlob(blob, `grain-gradient-${width}x${height}.png`);
       };
 
       const render = () => {
@@ -745,7 +928,7 @@
         state.distortion = 44;
         state.swirl = 30;
         state.grainOpacity = 0.34;
-        state.grainDensity = 90;
+        state.grainDensity = 96;
         state.contrast = 1.7;
         state.seed = 1;
         state.blendMode = "overlay";
@@ -753,19 +936,35 @@
         state.motionPreset = defaultMotionPreset();
         state.motionSpeed = 38;
         state.motionIntensity = 46;
+        state.exportWidth = 1920;
+        state.exportHeight = 1080;
         syncInputs();
         render();
+      });
+
+      elements.exportWidth.addEventListener("input", (event) => {
+        syncExportSize("exportWidth", event.target.value);
+      });
+
+      elements.exportWidth.addEventListener("change", (event) => {
+        syncExportSize("exportWidth", event.target.value, true);
+      });
+
+      elements.exportHeight.addEventListener("input", (event) => {
+        syncExportSize("exportHeight", event.target.value);
+      });
+
+      elements.exportHeight.addEventListener("change", (event) => {
+        syncExportSize("exportHeight", event.target.value, true);
       });
 
       elements.copyCss.addEventListener("click", async () => {
         try {
           const css = createGrainGradientCSS({
-            ...createPreviewOptions(),
-            selector: ".grain-gradient",
+            ...createPreviewOptions(".grain-gradient"),
           });
           const fallbackCss = createFallbackCSS({
-            ...createPreviewOptions(),
-            selector: ".grain-gradient",
+            ...createPreviewOptions(".grain-gradient"),
           }).replaceAll(".preview::after", ".grain-gradient::after");
 
           await navigator.clipboard.writeText(css + fallbackCss);
@@ -778,6 +977,24 @@
             "The browser blocked clipboard access.",
             error?.stack || String(error),
           );
+        }
+      });
+
+      elements.exportPng.addEventListener("click", async () => {
+        elements.exportPng.disabled = true;
+        try {
+          await exportPng();
+          setFeedback("ready", "Exported", "PNG export started downloading.");
+          window.setTimeout(() => setFeedback("ready", "Ready", "Preview is live."), 1400);
+        } catch (error) {
+          setFeedback(
+            "error",
+            "Export failed",
+            "The browser could not export this PNG.",
+            error?.stack || String(error),
+          );
+        } finally {
+          elements.exportPng.disabled = false;
         }
       });
     </script>
