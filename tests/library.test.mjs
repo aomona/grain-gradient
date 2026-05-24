@@ -129,14 +129,19 @@ test("allows lower svg grain frequency for density controls", () => {
 test("detects Android Chrome for canvas fallback", () => {
   const androidChrome =
     "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
-  const samsungBrowser =
-    "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/24.0 Chrome/120.0 Mobile Safari/537.36";
+  const excludedBrowsers = [
+    "Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/AP1A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/124.0.0.0 Mobile Safari/537.36",
+    "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36 EdgA/124.0.0.0",
+    "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36 OPR/80.0.0.0",
+    "Mozilla/5.0 (Android 14; Mobile; rv:124.0) Gecko/124.0 Firefox/124.0",
+    "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/24.0 Chrome/120.0 Mobile Safari/537.36",
+  ];
 
   assert.equal(isAndroidChrome(androidChrome), true);
-  assert.equal(isAndroidChrome(samsungBrowser), false);
+  for (const userAgent of excludedBrowsers) assert.equal(isAndroidChrome(userAgent), false);
   assert.equal(shouldUseAndroidCanvasFallback("auto", androidChrome), true);
   assert.equal(shouldUseAndroidCanvasFallback("off", androidChrome), false);
-  assert.equal(shouldUseAndroidCanvasFallback("on", samsungBrowser), true);
+  assert.equal(shouldUseAndroidCanvasFallback("on", excludedBrowsers[0]), true);
 });
 
 test("exposes framework agnostic canvas fallback helpers", () => {

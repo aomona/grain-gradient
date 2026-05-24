@@ -37,6 +37,8 @@ const fallback = createAndroidCanvasFallbackStyle({ androidCanvasFallback: "auto
 if (fallback) Object.assign(grainLayer.style, fallback);
 ```
 
+`auto` is resolved where the helper runs. If you are exporting static CSS on a non-Android browser and want the Canvas fallback included, use `androidCanvasFallback: "on"` for that export.
+
 For CSS generated with `createGrainGradientCSS()`, apply those values to the generated `::after` grain layer as a CSS override.
 
 See [API reference](./docs/API.md) for all core functions, React helpers, options, and presets.

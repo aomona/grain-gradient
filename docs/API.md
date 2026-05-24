@@ -71,6 +71,8 @@ const fallback = createAndroidCanvasFallbackStyle({
 if (fallback) Object.assign(grainLayer.style, fallback);
 ```
 
+`androidCanvasFallback: "auto"` is resolved where this helper runs. For runtime usage, call it in the browser after hydration. For static CSS export, use `"on"` when you want the PNG fallback CSS included regardless of the browser used to generate the CSS.
+
 If you use `createGrainGradientCSS()` and its `::after` grain pseudo-element, append an override instead of assigning element styles:
 
 ```ts
