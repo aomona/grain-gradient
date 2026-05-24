@@ -62,6 +62,13 @@ test("clamps swirl above 100", () => {
   assert.ok(css.includes("rotate(12.00deg)"));
 });
 
+test("clamps swirl below 0", () => {
+  const css = createGrainGradientCSS({ swirl: -20 });
+  assert.ok(!css.includes("background-position:"));
+  assert.ok(!css.includes("rotate("));
+  assert.ok(!css.includes("scale(1.12) translate3d"));
+});
+
 test("keeps swirl offsets in motion keyframes", () => {
   const css = createGrainGradientCSS({ swirl: 50, motionPreset: "drift", motionSpeed: 40 });
   assert.ok(css.includes("background-position: 48.0% 43.0%"));

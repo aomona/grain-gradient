@@ -24,14 +24,14 @@ const normalizeSwirl = (swirl = 0) => {
   return {
     value,
     enabled: value > 0,
-    scale: 1 + value * 0.004,
-    rotate: value * 0.12,
-    offsetX: shift * 12,
-    offsetY: shift * -10,
-    backgroundSizeX: 100 + value * 0.55,
-    backgroundSizeY: 100 + value * 0.4,
-    backgroundPositionX: 50 + shift * 12,
-    backgroundPositionY: 50 - shift * 10,
+    scale: Number((1 + value * 0.004).toFixed(3)),
+    rotate: Number((value * 0.12).toFixed(2)),
+    offsetX: Number((shift * 12).toFixed(1)),
+    offsetY: Number((shift * -10).toFixed(1)),
+    backgroundSizeX: Number((100 + value * 0.55).toFixed(1)),
+    backgroundSizeY: Number((100 + value * 0.4).toFixed(1)),
+    backgroundPositionX: Number((50 + shift * 12).toFixed(1)),
+    backgroundPositionY: Number((50 - shift * 10).toFixed(1)),
   };
 };
 
