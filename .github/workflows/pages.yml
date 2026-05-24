@@ -30,7 +30,7 @@ jobs:
         run: |
           mkdir -p _site
           cp -R playground dist _site/
-          cp screenshot.png _site/screenshot.png
+          cp grain-gradient-og.png _site/screenshot.png
           touch _site/.nojekyll
           cat > _site/index.html <<'HTML'
           <!doctype html>
