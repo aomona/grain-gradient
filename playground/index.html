@@ -855,7 +855,7 @@
 
           elements.meshLayer.style.backgroundImage = meshBackground;
           elements.meshLayer.style.backgroundRepeat = "no-repeat";
-          elements.meshLayer.style.backgroundSize = `${118 + state.swirl * 0.55}% ${118 + state.swirl * 0.4}%`;
+          elements.meshLayer.style.backgroundSize = `${100 + state.swirl * 0.55}% ${100 + state.swirl * 0.4}%`;
           elements.meshLayer.style.backgroundPosition = `${50 + swirlShift * 12}% ${50 - swirlShift * 10}%`;
           elements.meshLayer.style.filter = meshFilter;
           elements.meshLayer.style.transform = meshTransform;
@@ -999,6 +999,7 @@
             blur: 8 + state.distortion * 0.65,
             intensity: 1.05 + state.distortion / 110,
             saturation: 1 + state.distortion / 160,
+            swirl: state.swirl,
             seed: state.seed,
             frequency: densityToFrequency(state.grainDensity),
             contrast: state.contrast,

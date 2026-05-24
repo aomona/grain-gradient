@@ -38,6 +38,44 @@ test("creates css snippet", () => {
   assert.ok(css.includes("inset: -8%"));
 });
 
+test("keeps swirl neutral by default", () => {
+  const css = createGrainGradientCSS();
+  assert.ok(!css.includes("background-position:"));
+  assert.ok(!css.includes("rotate("));
+  assert.ok(!css.includes("scale(1.12) translate3d"));
+});
+
+test("adds swirl mesh transforms when enabled", () => {
+  const css = createGrainGradientCSS({ swirl: 50 });
+  assert.ok(css.includes("background-size: 127.5% 120.0%"));
+  assert.ok(css.includes("background-position: 56.0% 45.0%"));
+  assert.ok(css.includes("transform:"));
+  assert.ok(css.includes("scale(1.200)"));
+  assert.ok(css.includes("rotate(6.00deg)"));
+});
+
+test("clamps swirl above 100", () => {
+  const css = createGrainGradientCSS({ swirl: 999 });
+  assert.ok(css.includes("background-size: 155.0% 140.0%"));
+  assert.ok(css.includes("background-position: 62.0% 40.0%"));
+  assert.ok(css.includes("scale(1.400)"));
+  assert.ok(css.includes("rotate(12.00deg)"));
+});
+
+test("clamps swirl below 0", () => {
+  const css = createGrainGradientCSS({ swirl: -20 });
+  assert.ok(!css.includes("background-position:"));
+  assert.ok(!css.includes("rotate("));
+  assert.ok(!css.includes("scale(1.12) translate3d"));
+});
+
+test("keeps swirl offsets in motion keyframes", () => {
+  const css = createGrainGradientCSS({ swirl: 50, motionPreset: "drift", motionSpeed: 40 });
+  assert.ok(css.includes("background-position: 48.0% 43.0%"));
+  assert.ok(css.includes("background-position: 64.0% 47.0%"));
+  assert.ok(css.includes("scale(1.200) rotate(6.00deg) translate3d"));
+});
+
 test("creates animated css when motion is enabled", () => {
   const css = createGrainGradientCSS({
     motionPreset: "drift",

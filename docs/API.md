@@ -64,13 +64,14 @@ This returns only the background image value, not full CSS declarations.
 
 Options:
 
-| Option       | Default                                        | Note                                                           |
-| ------------ | ---------------------------------------------- | -------------------------------------------------------------- |
-| `colors`     | `['#7c3aed', '#06b6d4', '#f97316', '#f43f5e']` | Uses up to 6 colors                                            |
-| `baseColor`  | `#0b1020`                                      | Used in the base linear gradient                               |
-| `blur`       | —                                              | Used by CSS/React layer helpers, not the returned image string |
-| `saturation` | —                                              | Used by CSS/React layer helpers                                |
-| `intensity`  | —                                              | Fallback alias for saturation in layer helpers                 |
+| Option       | Default                                        | Note                                                                              |
+| ------------ | ---------------------------------------------- | --------------------------------------------------------------------------------- |
+| `colors`     | `['#7c3aed', '#06b6d4', '#f97316', '#f43f5e']` | Uses up to 6 colors                                                               |
+| `baseColor`  | `#0b1020`                                      | Used in the base linear gradient                                                  |
+| `blur`       | —                                              | Used by CSS/React layer helpers, not the returned image string                    |
+| `saturation` | —                                              | Used by CSS/React layer helpers                                                   |
+| `intensity`  | —                                              | Fallback alias for saturation in layer helpers                                    |
+| `swirl`      | `0`                                            | `0` – `100`; rotates, scales, and repositions the mesh layer in CSS/React helpers |
 
 ### `createGrainGradientCSS(options?)`
 
@@ -85,6 +86,7 @@ const css = createGrainGradientCSS({
   motionPreset: "drift",
   motionSpeed: 38,
   motionIntensity: 46,
+  swirl: 30,
 });
 ```
 
@@ -98,6 +100,8 @@ Options include all `createMeshGradient` and `createTurbulenceNoise` options, pl
 | `motionPreset`    | `none`            | `none`, `drift`, `breathe`, or `orbit`     |
 | `motionSpeed`     | `0`               | `0` – `100`; `0` disables animation        |
 | `motionIntensity` | `50`              | `0` – `100`; controls travel/zoom strength |
+
+`swirl` is part of the mesh options and is clamped to `0` – `100`. It affects the generated `::before` mesh layer by adjusting `background-size`, `background-position`, and `transform`; `createMeshGradient()` itself still returns only a `background-image` value.
 
 The generated grain layer uses:
 
@@ -129,6 +133,7 @@ export function Background() {
       motionPreset="drift"
       motionSpeed={38}
       motionIntensity={46}
+      swirl={30}
       androidCanvasFallback="auto"
       style={{ minHeight: "100vh" }}
     />

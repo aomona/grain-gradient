@@ -24,6 +24,7 @@ export interface MeshGradientOptions {
   intensity?: number;
   blur?: number;
   saturation?: number;
+  swirl?: number;
 }
 
 export type MotionPreset = "none" | "drift" | "breathe" | "orbit";
@@ -45,6 +46,29 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 const encodeSvg = (svg: string) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 
 const motionPresets = new Set<MotionPreset>(["none", "drift", "breathe", "orbit"]);
+
+const normalizeSwirl = (swirl = 0) => {
+  const value = clamp(swirl, 0, 100);
+  const shift = value / 100;
+  return {
+    value,
+    enabled: value > 0,
+    scale: (1 + value * 0.004).toFixed(3),
+    rotate: (value * 0.12).toFixed(2),
+    offsetX: shift * 12,
+    offsetY: shift * -10,
+    backgroundSizeX: (100 + value * 0.55).toFixed(1),
+    backgroundSizeY: (100 + value * 0.4).toFixed(1),
+    backgroundPositionX: (50 + shift * 12).toFixed(1),
+    backgroundPositionY: (50 - shift * 10).toFixed(1),
+  };
+};
+
+const createSwirlTransform = (swirl: ReturnType<typeof normalizeSwirl>) =>
+  swirl.enabled ? ` scale(${swirl.scale}) rotate(${swirl.rotate}deg)` : "";
+
+const shiftedPosition = (x: number, y: number, swirl: ReturnType<typeof normalizeSwirl>) =>
+  `${(x + swirl.offsetX).toFixed(1)}% ${(y + swirl.offsetY).toFixed(1)}%`;
 
 const normalizeMotion = (options: MotionOptions = {}) => {
   const preset = motionPresets.has(options.motionPreset as MotionPreset)
@@ -76,6 +100,8 @@ const keyframeName = (selector: string) =>
 function createGrainGradientMotionCSS(options: GrainGradientCSSOptions = {}): string {
   const selector = options.selector ?? ".grain-gradient";
   const motion = normalizeMotion(options);
+  const swirl = normalizeSwirl(options.swirl);
+  const swirlTransform = createSwirlTransform(swirl);
   if (!motion.enabled) return "";
 
   const name = keyframeName(selector);
@@ -83,9 +109,9 @@ function createGrainGradientMotionCSS(options: GrainGradientCSSOptions = {}): st
   const meshAnimation = `${meshName} ${motion.duration}s ease-in-out infinite alternate`;
 
   const motionKeyframes: Record<Exclude<MotionPreset, "none">, string> = {
-    drift: `@keyframes ${meshName} {\n  0% { transform: scale(1.12) translate3d(-${motion.travel}%, -${motion.travel}%, 0); background-position: 42% 48%; }\n  100% { transform: scale(${motion.zoom}) translate3d(${motion.travel}%, ${motion.travel}%, 0); background-position: 58% 52%; }\n}`,
-    breathe: `@keyframes ${meshName} {\n  0% { transform: scale(1.12); filter: blur(${clamp(options.blur ?? 42, 0, 80)}px) saturate(${clamp(options.saturation ?? options.intensity ?? 1.18, 0.2, 2.5)}); }\n  100% { transform: scale(${motion.zoom}); filter: blur(${clamp((options.blur ?? 42) + Number(motion.travel), 0, 80)}px) saturate(${clamp((options.saturation ?? options.intensity ?? 1.18) + 0.18, 0.2, 2.5)}); }\n}`,
-    orbit: `@keyframes ${meshName} {\n  0% { transform: scale(1.12) rotate(-${motion.rotate}deg) translate3d(-${motion.travel}%, ${motion.travel}%, 0); background-position: 46% 54%; }\n  100% { transform: scale(${motion.zoom}) rotate(${motion.rotate}deg) translate3d(${motion.travel}%, -${motion.travel}%, 0); background-position: 54% 46%; }\n}`,
+    drift: `@keyframes ${meshName} {\n  0% { transform: scale(1.12)${swirlTransform} translate3d(-${motion.travel}%, -${motion.travel}%, 0); background-position: ${shiftedPosition(42, 48, swirl)}; }\n  100% { transform: scale(${motion.zoom})${swirlTransform} translate3d(${motion.travel}%, ${motion.travel}%, 0); background-position: ${shiftedPosition(58, 52, swirl)}; }\n}`,
+    breathe: `@keyframes ${meshName} {\n  0% { transform: scale(1.12)${swirlTransform}; filter: blur(${clamp(options.blur ?? 42, 0, 80)}px) saturate(${clamp(options.saturation ?? options.intensity ?? 1.18, 0.2, 2.5)}); }\n  100% { transform: scale(${motion.zoom})${swirlTransform}; filter: blur(${clamp((options.blur ?? 42) + Number(motion.travel), 0, 80)}px) saturate(${clamp((options.saturation ?? options.intensity ?? 1.18) + 0.18, 0.2, 2.5)}); }\n}`,
+    orbit: `@keyframes ${meshName} {\n  0% { transform: scale(1.12)${swirlTransform} rotate(-${motion.rotate}deg) translate3d(-${motion.travel}%, ${motion.travel}%, 0); background-position: ${shiftedPosition(46, 54, swirl)}; }\n  100% { transform: scale(${motion.zoom})${swirlTransform} rotate(${motion.rotate}deg) translate3d(${motion.travel}%, -${motion.travel}%, 0); background-position: ${shiftedPosition(54, 46, swirl)}; }\n}`,
   };
   const keyframes = motionKeyframes[motion.preset as Exclude<MotionPreset, "none">];
 
@@ -126,6 +152,11 @@ export function createMeshGradient(options: MeshGradientOptions = {}): string {
 export function createGrainGradientCSS(options: GrainGradientCSSOptions = {}): string {
   const selector = options.selector ?? ".grain-gradient";
   const motionCSS = createGrainGradientMotionCSS(options);
+  const swirl = normalizeSwirl(options.swirl);
+  const swirlBackgroundPosition = swirl.enabled
+    ? `  background-position: ${swirl.backgroundPositionX}% ${swirl.backgroundPositionY}%;\n`
+    : "";
+  const swirlTransform = createSwirlTransform(swirl);
   return `
 ${selector} {
   position: relative;
@@ -138,10 +169,10 @@ ${selector}::before {
   position: absolute;
   inset: -18%;
   background-image: ${createMeshGradient(options)};
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
+  background-size: ${swirl.enabled ? `${swirl.backgroundSizeX}% ${swirl.backgroundSizeY}%` : "100% 100%"};
+${swirlBackgroundPosition}  background-repeat: no-repeat;
   filter: blur(${clamp(options.blur ?? 42, 0, 80)}px) saturate(${clamp(options.saturation ?? options.intensity ?? 1.18, 0.2, 2.5)});
-  transform: scale(1.12);
+  transform: scale(1.12)${swirlTransform};
   z-index: 0;
 }
 

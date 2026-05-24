@@ -22,6 +22,7 @@ const css = createGrainGradientCSS({
   motionPreset: "drift",
   motionSpeed: 38,
   motionIntensity: 46,
+  swirl: 30,
 });
 ```
 
@@ -43,6 +44,7 @@ export function Hero() {
       motionPreset="drift"
       motionSpeed={38}
       motionIntensity={46}
+      swirl={30}
       androidCanvasFallback="auto"
       style={{ minHeight: "100vh" }}
     />
