@@ -2,10 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  createAndroidCanvasFallbackStyle,
+  createCanvasGrainBackgroundSize,
+  createCanvasGrainNoise,
   createGrainGradientCSS,
   createMeshGradient,
   createTurbulenceNoise,
+  isAndroidChrome,
   presets,
+  shouldUseAndroidCanvasFallback,
 } from "../dist/index.js";
 
 test("exports presets", () => {
@@ -119,4 +124,73 @@ test("allows lower svg grain frequency for density controls", () => {
   const noise = createTurbulenceNoise({ frequency: 0.04 });
   const decoded = decodeURIComponent(noise.slice('url("data:image/svg+xml,'.length, -2));
   assert.ok(decoded.includes('baseFrequency="0.04"'));
+});
+
+test("detects Android Chrome for canvas fallback", () => {
+  const androidChrome =
+    "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
+  const excludedBrowsers = [
+    "Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/AP1A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/124.0.0.0 Mobile Safari/537.36",
+    "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36 EdgA/124.0.0.0",
+    "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36 OPR/80.0.0.0",
+    "Mozilla/5.0 (Android 14; Mobile; rv:124.0) Gecko/124.0 Firefox/124.0",
+    "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/24.0 Chrome/120.0 Mobile Safari/537.36",
+  ];
+
+  assert.equal(isAndroidChrome(androidChrome), true);
+  for (const userAgent of excludedBrowsers) assert.equal(isAndroidChrome(userAgent), false);
+  assert.equal(shouldUseAndroidCanvasFallback("auto", androidChrome), true);
+  assert.equal(shouldUseAndroidCanvasFallback("off", androidChrome), false);
+  assert.equal(shouldUseAndroidCanvasFallback("on", excludedBrowsers[0]), true);
+});
+
+test("exposes framework agnostic canvas fallback helpers", () => {
+  assert.equal(createCanvasGrainBackgroundSize({ frequency: 0.04 }), "720px 720px");
+  assert.equal(createCanvasGrainBackgroundSize({ frequency: 2.4 }), "140px 140px");
+  assert.equal(createCanvasGrainNoise(), null);
+  assert.equal(createAndroidCanvasFallbackStyle({ androidCanvasFallback: "on" }), null);
+});
+
+test("creates canvas fallback style when canvas is available", () => {
+  const originalDocument = globalThis.document;
+  globalThis.document = {
+    createElement(name) {
+      assert.equal(name, "canvas");
+      return {
+        width: 0,
+        height: 0,
+        getContext(type) {
+          assert.equal(type, "2d");
+          return {
+            createImageData(width, height) {
+              return { data: new Uint8ClampedArray(width * height * 4) };
+            },
+            putImageData() {},
+          };
+        },
+        toDataURL(type) {
+          assert.equal(type, "image/png");
+          return "data:image/png;base64,test";
+        },
+      };
+    },
+  };
+
+  try {
+    const style = createAndroidCanvasFallbackStyle({
+      androidCanvasFallback: "on",
+      seed: 7,
+      frequency: 1.25,
+      contrast: 1.7,
+    });
+    assert.deepEqual(style, {
+      backgroundImage: 'url("data:image/png;base64,test")',
+      backgroundSize: "423px 423px",
+      backgroundRepeat: "repeat",
+      imageRendering: "pixelated",
+    });
+  } finally {
+    if (originalDocument === undefined) delete globalThis.document;
+    else globalThis.document = originalDocument;
+  }
 });
