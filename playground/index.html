@@ -701,7 +701,9 @@
 
       const parseExportSize = (value, fallback) => {
         if (value === "") return fallback;
-        return clamp(Math.round(Number(value) || fallback), 64, 8192);
+        let next = Number(value);
+        if (Number.isNaN(next)) next = fallback;
+        return clamp(Math.round(next), 64, 8192);
       };
 
       const syncExportSize = (key, value, commit = false) => {
