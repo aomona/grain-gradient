@@ -109,7 +109,7 @@ function createGrainGradientMotionCSS(options: GrainGradientCSSOptions = {}): st
   const meshAnimation = `${meshName} ${motion.duration}s ease-in-out infinite alternate`;
 
   const motionKeyframes: Record<Exclude<MotionPreset, "none">, string> = {
-    drift: `@keyframes ${meshName} {\n  0% { transform: scale(1.12)${swirlTransform} translate3d(-${motion.travel}%, -${motion.travel}%, 0); background-position: ${shiftedPosition(42, 48, swirl)}; }\n  100% { transform: scale(${motion.zoom})${swirlTransform} translate3d(${motion.travel}%, ${motion.travel}%, 0); background-position: ${shiftedPosition(58, 52, swirl)}; }\n}`,
+    drift: `@keyframes ${meshName} {\n  0% { transform: scale(1.12)${swirlTransform} translate3d(-${motion.travel}%, -${motion.travel}%, 0); }\n  100% { transform: scale(${motion.zoom})${swirlTransform} translate3d(${motion.travel}%, ${motion.travel}%, 0); }\n}`,
     breathe: `@keyframes ${meshName} {\n  0% { transform: scale(1.12)${swirlTransform}; filter: blur(${clamp(options.blur ?? 42, 0, 80)}px) saturate(${clamp(options.saturation ?? options.intensity ?? 1.18, 0.2, 2.5)}); }\n  100% { transform: scale(${motion.zoom})${swirlTransform}; filter: blur(${clamp((options.blur ?? 42) + Number(motion.travel), 0, 80)}px) saturate(${clamp((options.saturation ?? options.intensity ?? 1.18) + 0.18, 0.2, 2.5)}); }\n}`,
     orbit: `@keyframes ${meshName} {\n  0% { transform: scale(1.12)${swirlTransform} rotate(-${motion.rotate}deg) translate3d(-${motion.travel}%, ${motion.travel}%, 0); background-position: ${shiftedPosition(46, 54, swirl)}; }\n  100% { transform: scale(${motion.zoom})${swirlTransform} rotate(${motion.rotate}deg) translate3d(${motion.travel}%, -${motion.travel}%, 0); background-position: ${shiftedPosition(54, 46, swirl)}; }\n}`,
   };
@@ -173,6 +173,9 @@ ${selector}::before {
 ${swirlBackgroundPosition}  background-repeat: no-repeat;
   filter: blur(${clamp(options.blur ?? 42, 0, 80)}px) saturate(${clamp(options.saturation ?? options.intensity ?? 1.18, 0.2, 2.5)});
   transform: scale(1.12)${swirlTransform};
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
+  will-change: transform;
   z-index: 0;
 }
 

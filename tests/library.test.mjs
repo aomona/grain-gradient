@@ -69,11 +69,17 @@ test("clamps swirl below 0", () => {
   assert.ok(!css.includes("scale(1.12) translate3d"));
 });
 
-test("keeps swirl offsets in motion keyframes", () => {
-  const css = createGrainGradientCSS({ swirl: 50, motionPreset: "drift", motionSpeed: 40 });
-  assert.ok(css.includes("background-position: 48.0% 43.0%"));
-  assert.ok(css.includes("background-position: 64.0% 47.0%"));
-  assert.ok(css.includes("scale(1.200) rotate(6.00deg) translate3d"));
+test("keeps swirl offsets in orbit keyframes", () => {
+  const css = createGrainGradientCSS({ swirl: 50, motionPreset: "orbit", motionSpeed: 40 });
+  assert.ok(css.includes("background-position: 52.0% 49.0%"));
+  assert.ok(css.includes("background-position: 60.0% 41.0%"));
+  assert.ok(css.includes("scale(1.200) rotate(6.00deg) rotate("));
+});
+
+test("keeps drift animation transform-only", () => {
+  const css = createGrainGradientCSS({ motionPreset: "drift", motionSpeed: 40 });
+  assert.ok(!css.includes("background-position:"));
+  assert.ok(css.includes("translate3d"));
 });
 
 test("creates animated css when motion is enabled", () => {
