@@ -18,6 +18,20 @@ export interface TurbulenceNoiseOptions {
   size?: number;
 }
 
+export type AndroidCanvasFallback = "auto" | "on" | "off";
+
+export interface AndroidCanvasFallbackOptions extends TurbulenceNoiseOptions {
+  androidCanvasFallback?: AndroidCanvasFallback;
+  androidCanvasFallbackUserAgent?: string | null;
+}
+
+export interface CanvasGrainStyle {
+  backgroundImage: string;
+  backgroundSize: string;
+  backgroundRepeat: "repeat";
+  imageRendering: "pixelated";
+}
+
 export interface MeshGradientOptions {
   colors?: string[];
   baseColor?: string;
@@ -44,6 +58,11 @@ export interface GrainGradientCSSOptions
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 const encodeSvg = (svg: string) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+
+const canvasNoiseCacheLimit = 24;
+const canvasNoiseCache = new Map<string, string>();
+
+const getBrowserUserAgent = () => (typeof navigator === "undefined" ? "" : navigator.userAgent);
 
 const motionPresets = new Set<MotionPreset>(["none", "drift", "breathe", "orbit"]);
 
@@ -93,6 +112,133 @@ const normalizeMotion = (options: MotionOptions = {}) => {
     grainShift,
   };
 };
+
+const canvasNoiseKey = (options: TurbulenceNoiseOptions = {}) => {
+  const seed = Math.floor(clamp(options.seed ?? 1, 0, 9999));
+  const frequency = clamp(options.frequency ?? options.baseFrequency ?? 1.25, 0.04, 2.4);
+  const density = (frequency - 0.04) / (2.4 - 0.04);
+  const blockSize = Math.max(1, Math.round(2.25 - density * 1.25));
+  const contrast = clamp((options.contrast ?? 1.7) / 2.5, 0.35, 1).toFixed(3);
+  return JSON.stringify([seed, blockSize, contrast]);
+};
+
+const cacheCanvasNoise = (key: string, url: string) => {
+  if (canvasNoiseCache.has(key)) canvasNoiseCache.delete(key);
+  canvasNoiseCache.set(key, url);
+  while (canvasNoiseCache.size > canvasNoiseCacheLimit) {
+    const oldestKey = canvasNoiseCache.keys().next().value;
+    if (oldestKey === undefined) break;
+    canvasNoiseCache.delete(oldestKey);
+  }
+};
+
+export const isAndroidChrome = (userAgent = getBrowserUserAgent()) => {
+  const ua = userAgent;
+  return (
+    /Android/i.test(ua) &&
+    /Chrome\//i.test(ua) &&
+    !/(; wv|Version\/|EdgA|OPR|SamsungBrowser|Firefox|CriOS)/i.test(ua)
+  );
+};
+
+export const shouldUseAndroidCanvasFallback = (
+  fallback: AndroidCanvasFallback | undefined,
+  userAgent?: string | null,
+) => {
+  if (fallback === "on") return true;
+  if (fallback === "off") return false;
+  return isAndroidChrome(userAgent ?? getBrowserUserAgent());
+};
+
+export function createCanvasGrainNoise(options: TurbulenceNoiseOptions = {}): string | null {
+  if (typeof document === "undefined") return null;
+
+  const cacheKey = canvasNoiseKey(options);
+  const cached = canvasNoiseCache.get(cacheKey);
+  if (cached) {
+    cacheCanvasNoise(cacheKey, cached);
+    return cached;
+  }
+
+  try {
+    const size = 1024;
+    const canvas = document.createElement("canvas");
+    if (typeof canvas.getContext !== "function" || typeof canvas.toDataURL !== "function") {
+      return null;
+    }
+    canvas.width = size;
+    canvas.height = size;
+
+    const context = canvas.getContext("2d", { alpha: false });
+    if (!context || typeof context.createImageData !== "function") return null;
+
+    const image = context.createImageData(size, size);
+    let value = Math.floor(clamp(options.seed ?? 1, 0, 9999)) >>> 0;
+    const nextRandom = () => {
+      value = (value * 1664525 + 1013904223) >>> 0;
+      return value / 4294967296;
+    };
+    const frequency = clamp(options.frequency ?? options.baseFrequency ?? 1.25, 0.04, 2.4);
+    const density = (frequency - 0.04) / (2.4 - 0.04);
+    const contrast = clamp((options.contrast ?? 1.7) / 2.5, 0.35, 1);
+    const blockSize = Math.max(1, Math.round(2.25 - density * 1.25));
+
+    for (let y = 0; y < size; y += blockSize) {
+      for (let x = 0; x < size; x += blockSize) {
+        const bit = nextRandom() > 0.5 ? 1 : 0;
+        const channel = Math.round(128 + (bit ? 127 : -127) * contrast);
+        for (let yy = 0; yy < blockSize; yy++) {
+          for (let xx = 0; xx < blockSize; xx++) {
+            const px = x + xx;
+            const py = y + yy;
+            if (px >= size || py >= size) continue;
+            const offset = (py * size + px) * 4;
+            image.data[offset] = channel;
+            image.data[offset + 1] = channel;
+            image.data[offset + 2] = channel;
+            image.data[offset + 3] = 255;
+          }
+        }
+      }
+    }
+
+    context.putImageData(image, 0, 0);
+    const url = `url("${canvas.toDataURL("image/png")}")`;
+    cacheCanvasNoise(cacheKey, url);
+    return url;
+  } catch {
+    return null;
+  }
+}
+
+export function createCanvasGrainBackgroundSize(options: TurbulenceNoiseOptions = {}) {
+  const frequency = clamp(options.frequency ?? options.baseFrequency ?? 1.25, 0.04, 2.4);
+  const density = (frequency - 0.04) / (2.4 - 0.04);
+  return `${Math.round(720 - density * 580)}px ${Math.round(720 - density * 580)}px`;
+}
+
+export function createAndroidCanvasFallbackStyle(
+  options: AndroidCanvasFallbackOptions = {},
+): CanvasGrainStyle | null {
+  if (
+    !shouldUseAndroidCanvasFallback(
+      options.androidCanvasFallback,
+      options.androidCanvasFallbackUserAgent,
+    )
+  ) {
+    return null;
+  }
+
+  const backgroundImage = createCanvasGrainNoise(options);
+  if (!backgroundImage) return null;
+
+  return {
+    backgroundImage,
+    backgroundSize: createCanvasGrainBackgroundSize(options),
+    backgroundRepeat: "repeat",
+    imageRendering: "pixelated",
+  };
+}
 
 const keyframeName = (selector: string) =>
   `grain-gradient-${selector.replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "motion"}`;

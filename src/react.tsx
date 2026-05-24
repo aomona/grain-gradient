@@ -1,8 +1,15 @@
 import { memo, useEffect, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
-import { createMeshGradient, createTurbulenceNoise, type GrainGradientCSSOptions } from "./core.js";
+import {
+  createAndroidCanvasFallbackStyle,
+  createMeshGradient,
+  createTurbulenceNoise,
+  type AndroidCanvasFallback,
+  type CanvasGrainStyle,
+  type GrainGradientCSSOptions,
+} from "./core.js";
 
-export type AndroidCanvasFallback = "auto" | "on" | "off";
+export type { AndroidCanvasFallback } from "./core.js";
 
 export interface GrainGradientReactOptions extends GrainGradientCSSOptions {
   androidCanvasFallback?: AndroidCanvasFallback;
@@ -16,7 +23,6 @@ export interface GrainGradientProps extends GrainGradientReactOptions {
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-const canvasNoiseCache = new Map<string, string>();
 
 const normalizeSwirl = (swirl = 0) => {
   const value = clamp(swirl, 0, 100);
@@ -37,94 +43,6 @@ const normalizeSwirl = (swirl = 0) => {
 
 const createSwirlTransform = (swirl: ReturnType<typeof normalizeSwirl>) =>
   swirl.enabled ? ` scale(${swirl.scale}) rotate(${swirl.rotate}deg)` : "";
-
-const getBrowserUserAgent = () => (typeof navigator === "undefined" ? "" : navigator.userAgent);
-
-const isAndroidChrome = (userAgent = getBrowserUserAgent()) => {
-  const ua = userAgent;
-  return (
-    /Android/i.test(ua) &&
-    /Chrome\//i.test(ua) &&
-    !/(; wv|Version\/|EdgA|OPR|SamsungBrowser|Firefox|CriOS)/i.test(ua)
-  );
-};
-
-const shouldUseCanvasFallback = (
-  fallback: AndroidCanvasFallback | undefined,
-  userAgent?: string | null,
-) => {
-  if (fallback === "on") return true;
-  if (fallback === "off") return false;
-  return isAndroidChrome(userAgent ?? getBrowserUserAgent());
-};
-
-const canvasNoiseKey = (options: GrainGradientReactOptions = {}) => {
-  const seed = Math.floor(clamp(options.seed ?? 1, 0, 9999));
-  const frequency = clamp(options.frequency ?? options.baseFrequency ?? 1.25, 0.04, 2.4);
-  const contrast = clamp(options.contrast ?? 1.7, 1.0, 2.5);
-  return JSON.stringify([seed, frequency, contrast]);
-};
-
-const createCanvasNoise = (options: GrainGradientReactOptions = {}) => {
-  if (typeof document === "undefined") return null;
-
-  const cacheKey = canvasNoiseKey(options);
-  const cached = canvasNoiseCache.get(cacheKey);
-  if (cached) return cached;
-
-  const size = 1024;
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-
-  try {
-    const context = canvas.getContext("2d", { alpha: false });
-    if (!context) return null;
-
-    const image = context.createImageData(size, size);
-    let value = Math.floor(clamp(options.seed ?? 1, 0, 9999)) >>> 0;
-    const nextRandom = () => {
-      value = (value * 1664525 + 1013904223) >>> 0;
-      return value / 4294967296;
-    };
-    const frequency = clamp(options.frequency ?? options.baseFrequency ?? 1.25, 0.04, 2.4);
-    const density = (frequency - 0.04) / (2.4 - 0.04);
-    const contrast = clamp((options.contrast ?? 1.7) / 2.5, 0.35, 1);
-    const blockSize = Math.max(1, Math.round(2.25 - density * 1.25));
-
-    for (let y = 0; y < size; y += blockSize) {
-      for (let x = 0; x < size; x += blockSize) {
-        const bit = nextRandom() > 0.5 ? 1 : 0;
-        const channel = Math.round(128 + (bit ? 127 : -127) * contrast);
-        for (let yy = 0; yy < blockSize; yy++) {
-          for (let xx = 0; xx < blockSize; xx++) {
-            const px = x + xx;
-            const py = y + yy;
-            if (px >= size || py >= size) continue;
-            const offset = (py * size + px) * 4;
-            image.data[offset] = channel;
-            image.data[offset + 1] = channel;
-            image.data[offset + 2] = channel;
-            image.data[offset + 3] = 255;
-          }
-        }
-      }
-    }
-
-    context.putImageData(image, 0, 0);
-    const url = `url("${canvas.toDataURL("image/png")}")`;
-    canvasNoiseCache.set(cacheKey, url);
-    return url;
-  } catch {
-    return null;
-  }
-};
-
-const canvasBackgroundSize = (options: GrainGradientReactOptions = {}) => {
-  const frequency = clamp(options.frequency ?? options.baseFrequency ?? 1.25, 0.04, 2.4);
-  const density = (frequency - 0.04) / (2.4 - 0.04);
-  return `${Math.round(720 - density * 580)}px ${Math.round(720 - density * 580)}px`;
-};
 
 export function useGrainGradient(options: GrainGradientReactOptions = {}) {
   const meshKey = JSON.stringify([
@@ -158,23 +76,14 @@ export function useGrainGradient(options: GrainGradientReactOptions = {}) {
   ]);
   const meshCss = useMemo(() => createMeshGradient(options), [meshKey]);
   const grainUrl = useMemo(() => createTurbulenceNoise(options), [grainKey]);
-  const [canvasGrainUrl, setCanvasGrainUrl] = useState<string | null>(null);
+  const [canvasGrainStyle, setCanvasGrainStyle] = useState<CanvasGrainStyle | null>(null);
 
   useEffect(() => {
-    if (
-      !shouldUseCanvasFallback(
-        options.androidCanvasFallback,
-        options.androidCanvasFallbackUserAgent,
-      )
-    ) {
-      setCanvasGrainUrl(null);
-      return;
-    }
-    setCanvasGrainUrl(createCanvasNoise(options));
+    setCanvasGrainStyle(createAndroidCanvasFallbackStyle(options));
   }, [grainKey, options.androidCanvasFallback, options.androidCanvasFallbackUserAgent]);
 
-  const usesCanvasFallback = Boolean(canvasGrainUrl);
-  const activeGrainUrl = canvasGrainUrl ?? grainUrl;
+  const usesCanvasFallback = Boolean(canvasGrainStyle);
+  const activeGrainUrl = canvasGrainStyle?.backgroundImage ?? grainUrl;
   const cssText = useMemo(() => `background-image: ${meshCss};`, [meshCss]);
   const motion = useMemo(() => {
     const allowed = new Set(["none", "drift", "breathe", "orbit"]);
@@ -237,9 +146,9 @@ export function useGrainGradient(options: GrainGradientReactOptions = {}) {
     () =>
       ({
         backgroundImage: activeGrainUrl,
-        backgroundSize: usesCanvasFallback ? canvasBackgroundSize(options) : "100% 100%",
-        backgroundRepeat: usesCanvasFallback ? "repeat" : "no-repeat",
-        imageRendering: usesCanvasFallback ? "pixelated" : "auto",
+        backgroundSize: canvasGrainStyle?.backgroundSize ?? "100% 100%",
+        backgroundRepeat: canvasGrainStyle?.backgroundRepeat ?? "no-repeat",
+        imageRendering: canvasGrainStyle?.imageRendering ?? "auto",
         opacity: options.opacity ?? 0.34,
         mixBlendMode: (options.blendMode ?? "overlay") as CSSProperties["mixBlendMode"],
         pointerEvents: "none" as const,
@@ -247,6 +156,7 @@ export function useGrainGradient(options: GrainGradientReactOptions = {}) {
     [
       activeGrainUrl,
       usesCanvasFallback,
+      canvasGrainStyle,
       options.opacity,
       options.blendMode,
       options.frequency,

@@ -438,6 +438,17 @@
 
           <div class="field">
             <div class="label-row">
+              <label for="androidCanvasFallback">Android canvas fallback</label>
+            </div>
+            <select id="androidCanvasFallback">
+              <option value="auto">auto</option>
+              <option value="off">off</option>
+              <option value="on">on</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <div class="label-row">
               <label for="seedRange">Seed</label>
               <span class="value" id="seed-value"></span>
             </div>
@@ -479,6 +490,7 @@
         grainDensity: $("grainDensity"),
         contrast: $("contrast"),
         blendMode: $("blendMode"),
+        androidCanvasFallback: $("androidCanvasFallback"),
         seedRange: $("seedRange"),
         seedNumber: $("seedNumber"),
         copyCss: $("copyCss"),
@@ -531,7 +543,7 @@
         throw error;
       }
 
-      const { createGrainGradientCSS, presets } = api;
+      const { createAndroidCanvasFallbackStyle, createGrainGradientCSS, presets } = api;
 
       const presetNames = Object.keys(presets);
       elements.preset.innerHTML = presetNames
@@ -552,6 +564,7 @@
         contrast: 1.7,
         seed: 1,
         blendMode: "overlay",
+        androidCanvasFallback: "auto",
         motionPreset: defaultMotionPreset(),
         motionSpeed: 38,
         motionIntensity: 46,
@@ -578,6 +591,7 @@
         elements.seedRange.value = String(state.seed);
         elements.seedNumber.value = String(state.seed);
         elements.blendMode.value = state.blendMode;
+        elements.androidCanvasFallback.value = state.androidCanvasFallback;
       };
 
       const syncLabels = () => {
@@ -630,9 +644,20 @@
         motionIntensity: state.motionIntensity,
       });
 
+      const createFallbackCSS = (options) => {
+        const fallbackStyle = createAndroidCanvasFallbackStyle({
+          ...options,
+          androidCanvasFallback: state.androidCanvasFallback,
+        });
+        if (!fallbackStyle) return "";
+        return `\n\n.preview::after {\n  background-image: ${fallbackStyle.backgroundImage};\n  background-size: ${fallbackStyle.backgroundSize};\n  background-repeat: ${fallbackStyle.backgroundRepeat};\n  image-rendering: ${fallbackStyle.imageRendering};\n}`;
+      };
+
       const render = () => {
         try {
-          elements.previewCss.textContent = createGrainGradientCSS(createPreviewOptions());
+          const options = createPreviewOptions();
+          elements.previewCss.textContent =
+            createGrainGradientCSS(options) + createFallbackCSS(options);
           syncLabels();
           setFeedback("ready", "Ready", "Preview is rendered with the exported core CSS.");
         } catch (error) {
@@ -703,6 +728,11 @@
         render();
       });
 
+      elements.androidCanvasFallback.addEventListener("change", (event) => {
+        state.androidCanvasFallback = event.target.value;
+        render();
+      });
+
       elements.seedRange.addEventListener("input", (event) => syncSeed(event.target.value));
       elements.seedNumber.addEventListener("input", (event) => syncSeed(event.target.value));
 
@@ -715,6 +745,7 @@
         state.contrast = 1.7;
         state.seed = 1;
         state.blendMode = "overlay";
+        state.androidCanvasFallback = "auto";
         state.motionPreset = defaultMotionPreset();
         state.motionSpeed = 38;
         state.motionIntensity = 46;
@@ -728,8 +759,12 @@
             ...createPreviewOptions(),
             selector: ".grain-gradient",
           });
+          const fallbackCss = createFallbackCSS({
+            ...createPreviewOptions(),
+            selector: ".grain-gradient",
+          }).replaceAll(".preview::after", ".grain-gradient::after");
 
-          await navigator.clipboard.writeText(css);
+          await navigator.clipboard.writeText(css + fallbackCss);
           setFeedback("ready", "Copied", "Export CSS copied to clipboard.");
           window.setTimeout(() => setFeedback("ready", "Ready", "Preview is live."), 1400);
         } catch (error) {

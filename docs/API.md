@@ -6,10 +6,15 @@
 
 ```ts
 import {
+  createAndroidCanvasFallbackStyle,
+  createCanvasGrainBackgroundSize,
+  createCanvasGrainNoise,
   createGrainGradientCSS,
   createMeshGradient,
   createTurbulenceNoise,
+  isAndroidChrome,
   presets,
+  shouldUseAndroidCanvasFallback,
 } from "grain-gradient";
 ```
 
@@ -47,7 +52,48 @@ Options:
 | `height`        |  `2200` | SVG canvas height                  |
 | `size`          |       — | Fallback for both width and height |
 
-The core API always returns SVG turbulence noise. The playground and React helper can switch to a Canvas-generated PNG grain fallback on Android Chrome for device testing.
+The SVG helper always returns SVG turbulence noise. Use the Canvas fallback helpers below when Android Chrome needs a PNG grain fallback.
+
+### Canvas fallback helpers
+
+The core entry also exposes framework-agnostic helpers for applying the Android Chrome Canvas fallback outside React:
+
+```ts
+import { createAndroidCanvasFallbackStyle } from "grain-gradient";
+
+const fallback = createAndroidCanvasFallbackStyle({
+  androidCanvasFallback: "auto",
+  seed: 8,
+  frequency: 1.25,
+  contrast: 1.7,
+});
+
+if (fallback) Object.assign(grainLayer.style, fallback);
+```
+
+If you use `createGrainGradientCSS()` and its `::after` grain pseudo-element, append an override instead of assigning element styles:
+
+```ts
+const selector = ".grain-gradient";
+const fallback = createAndroidCanvasFallbackStyle({ androidCanvasFallback: "auto" });
+
+const fallbackCss = fallback
+  ? `${selector}::after {
+  background-image: ${fallback.backgroundImage};
+  background-size: ${fallback.backgroundSize};
+  background-repeat: ${fallback.backgroundRepeat};
+  image-rendering: ${fallback.imageRendering};
+}`
+  : "";
+```
+
+- `isAndroidChrome(userAgent?)` detects Android Chrome while excluding WebView, Edge, Opera, Samsung Browser, and Firefox.
+- `shouldUseAndroidCanvasFallback(fallback, userAgent?)` resolves `"auto" | "on" | "off"`.
+- `createCanvasGrainNoise(options?)` returns a Canvas-generated PNG CSS `url(...)` in browsers, or `null` when `document` / Canvas is unavailable.
+- `createCanvasGrainBackgroundSize(options?)` returns the repeated PNG tile size for the provided grain frequency.
+- `createAndroidCanvasFallbackStyle(options?)` returns `{ backgroundImage, backgroundSize, backgroundRepeat, imageRendering }` when the fallback applies and Canvas generation succeeds; otherwise it returns `null`.
+
+Like the React helper, these functions are SSR-safe as long as they are called after hydration or guarded by their `null` return value.
 
 ### `createMeshGradient(options?)`
 
@@ -144,7 +190,7 @@ export function Background() {
 Props:
 
 - All `createGrainGradientCSS` options
-- `androidCanvasFallback?: "auto" | "on" | "off"` — Built-in Canvas PNG fallback for the React helper on Android Chrome. `auto` detects Android Chrome after hydration; SSR renders SVG grain first, so there is no server-side `window`, `navigator`, or `canvas` access. The Canvas fallback uses `seed`, `frequency` / `baseFrequency`, and `contrast`; SVG-specific sizing options remain SVG-only.
+- `androidCanvasFallback?: "auto" | "on" | "off"` — Built-in Canvas PNG fallback on Android Chrome, powered by the core fallback helpers. `auto` detects Android Chrome after hydration; SSR renders SVG grain first, so there is no server-side `window`, `navigator`, or `canvas` access. The Canvas fallback uses `seed`, `frequency` / `baseFrequency`, and `contrast`; SVG-specific sizing options remain SVG-only.
 - `androidCanvasFallbackUserAgent?: string | null` — Optional SSR user-agent hint for `androidCanvasFallback="auto"`. Pass the request UA from frameworks such as Next.js so the post-hydration fallback decision matches server-known user-agent data.
 - `className?: string`
 - `style?: React.CSSProperties`
