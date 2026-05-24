@@ -1,6 +1,6 @@
 {
   "name": "grain-gradient",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Lightweight TypeScript utilities for mesh and grain gradients.",
   "keywords": [
     "background",
