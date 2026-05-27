@@ -6,6 +6,7 @@ import {
   createCanvasGrainBackgroundSize,
   createCanvasGrainNoise,
   createGrainGradientCSS,
+  createGrainLayerStyle,
   createMeshGradient,
   createTurbulenceNoise,
   isAndroidChrome,
@@ -41,6 +42,10 @@ test("creates css snippet", () => {
   assert.ok(css.includes("mix-blend-mode: overlay"));
   assert.ok(css.includes("inset: -18%"));
   assert.ok(css.includes("inset: -8%"));
+  assert.ok(css.includes("background-size: 3200px 2200px"));
+  assert.ok(css.includes("background-repeat: repeat"));
+  assert.ok(css.includes("contain: paint"));
+  assert.ok(!css.includes("will-change: transform"));
 });
 
 test("keeps swirl neutral by default", () => {
@@ -98,6 +103,7 @@ test("creates animated css when motion is enabled", () => {
   assert.ok(css.includes("prefers-reduced-motion"));
   assert.ok(css.includes("grain-gradient-grain-gradient-mesh-drift"));
   assert.ok(!css.includes("grain-gradient-grain-gradient-grain-drift"));
+  assert.ok(css.includes("will-change: transform"));
 });
 
 test("does not create motion keyframes when speed is zero", () => {
@@ -117,6 +123,7 @@ test("creates svg noise with expected defaults", () => {
   assert.ok(decoded.includes('baseFrequency="1.25"'));
   assert.ok(decoded.includes('width="3200"'));
   assert.ok(decoded.includes('height="2200"'));
+  assert.ok(decoded.includes('filterUnits="userSpaceOnUse"'));
   assert.ok(decoded.includes("feColorMatrix"));
 });
 
@@ -147,6 +154,14 @@ test("detects Android Chrome for canvas fallback", () => {
 test("exposes framework agnostic canvas fallback helpers", () => {
   assert.equal(createCanvasGrainBackgroundSize({ frequency: 0.04 }), "720px 720px");
   assert.equal(createCanvasGrainBackgroundSize({ frequency: 2.4 }), "140px 140px");
+  assert.deepEqual(createGrainLayerStyle(), {
+    backgroundSize: "3200px 2200px",
+    backgroundRepeat: "repeat",
+  });
+  assert.deepEqual(createGrainLayerStyle({ size: 512 }), {
+    backgroundSize: "512px 512px",
+    backgroundRepeat: "repeat",
+  });
   assert.equal(createCanvasGrainNoise(), null);
   assert.equal(createAndroidCanvasFallbackStyle({ androidCanvasFallback: "on" }), null);
 });

@@ -10,6 +10,7 @@ import {
   createCanvasGrainBackgroundSize,
   createCanvasGrainNoise,
   createGrainGradientCSS,
+  createGrainLayerStyle,
   createMeshGradient,
   createTurbulenceNoise,
   isAndroidChrome,
@@ -93,6 +94,7 @@ const fallbackCss = fallback
 - `shouldUseAndroidCanvasFallback(fallback, userAgent?)` resolves `"auto" | "on" | "off"`.
 - `createCanvasGrainNoise(options?)` returns a Canvas-generated PNG CSS `url(...)` in browsers, or `null` when `document` / Canvas is unavailable.
 - `createCanvasGrainBackgroundSize(options?)` returns the repeated PNG tile size for the provided grain frequency.
+- `createGrainLayerStyle(options?)` returns the SVG grain layer sizing (`background-size` + `background-repeat`). The SVG grain is drawn at a fixed CSS-pixel size, then repeated, so grain density is not tied to each container's dimensions.
 - `createAndroidCanvasFallbackStyle(options?)` returns `{ backgroundImage, backgroundSize, backgroundRepeat, imageRendering }` when the fallback applies and Canvas generation succeeds; otherwise it returns `null`.
 
 Like the React helper, these functions are SSR-safe as long as they are called after hydration or guarded by their `null` return value.
@@ -129,7 +131,7 @@ Creates framework-independent CSS with a root selector, a mesh `::before` layer,
 const css = createGrainGradientCSS({
   selector: ".grain-gradient",
   colors: ["#c2e812", "#ff7f11", "#ee4266", "#2a1e5c"],
-  opacity: 0.34,
+  opacity: 0.2,
   blendMode: "overlay",
   motionPreset: "drift",
   motionSpeed: 38,
@@ -143,7 +145,7 @@ Options include all `createMeshGradient` and `createTurbulenceNoise` options, pl
 | Option            | Default           | Note                                       |
 | ----------------- | ----------------- | ------------------------------------------ |
 | `selector`        | `.grain-gradient` | CSS selector for the generated snippet     |
-| `opacity`         | `0.34`            | Grain layer opacity                        |
+| `opacity`         | `0.2`             | Grain layer opacity                        |
 | `blendMode`       | `overlay`         | Grain layer `mix-blend-mode`               |
 | `motionPreset`    | `none`            | `none`, `drift`, `breathe`, or `orbit`     |
 | `motionSpeed`     | `0`               | `0` – `100`; `0` disables animation        |
@@ -154,12 +156,16 @@ Options include all `createMeshGradient` and `createTurbulenceNoise` options, pl
 The generated grain layer uses:
 
 ```css
-background-size: 100% 100%;
-background-repeat: no-repeat;
+background-size: 3200px 2200px;
+background-repeat: repeat;
 pointer-events: none;
+contain: paint;
 ```
 
+The fixed CSS-pixel grain size keeps visible roughness more consistent across different container sizes and display scale factors, and avoids stretching the SVG noise to every element. Pass `width` / `height` / `size` when you want a different fixed grain canvas; these options now affect both SVG dimensions and the visible grain tile size.
+
 When motion is enabled, the generated CSS appends `animation` declarations, scoped `@keyframes`, and a `prefers-reduced-motion: reduce` override for the selected preset. The animation is CSS-only, so the SVG noise data URL is not regenerated per frame.
+`will-change: transform` is only emitted while motion is enabled to avoid keeping extra compositor layers alive for static backgrounds.
 
 ## React API
 
@@ -176,7 +182,7 @@ export function Background() {
       colors={["#c2e812", "#ff7f11", "#ee4266", "#2a1e5c"]}
       frequency={1.25}
       contrast={1.7}
-      opacity={0.34}
+      opacity={0.2}
       blendMode="overlay"
       motionPreset="drift"
       motionSpeed={38}
@@ -232,7 +238,7 @@ Return value:
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `rootStyle`  | Relative/overflow-hidden container style                                                                                                          |
 | `meshStyle`  | Mesh layer style                                                                                                                                  |
-| `grainStyle` | Active grain layer style. It starts as SVG turbulence and may switch to repeated Canvas PNG after hydration when `androidCanvasFallback` applies. |
+| `grainStyle` | Active grain layer style. It starts as fixed-size repeated SVG turbulence and may switch to repeated Canvas PNG after hydration when `androidCanvasFallback` applies. |
 | `cssText`    | Minimal mesh background CSS text                                                                                                                  |
 
 ## Presets

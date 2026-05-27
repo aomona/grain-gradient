@@ -2,6 +2,7 @@ import { memo, useEffect, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import {
   createAndroidCanvasFallbackStyle,
+  createGrainLayerStyle,
   createMeshGradient,
   createTurbulenceNoise,
   type AndroidCanvasFallback,
@@ -58,6 +59,7 @@ export function useGrainGradient(options: GrainGradientReactOptions = {}) {
   ]);
   const meshCss = useMemo(() => createMeshGradient(options), [meshKey]);
   const grainUrl = useMemo(() => createTurbulenceNoise(options), [grainKey]);
+  const svgGrainLayerStyle = useMemo(() => createGrainLayerStyle(options), [grainKey]);
   const [canvasGrainStyle, setCanvasGrainStyle] = useState<CanvasGrainStyle | null>(null);
 
   useEffect(() => {
@@ -87,6 +89,8 @@ export function useGrainGradient(options: GrainGradientReactOptions = {}) {
         animation: motion.enabled
           ? `grain-gradient-react-mesh-${motion.preset} ${motion.duration}s ease-in-out infinite alternate`
           : undefined,
+        willChange: motion.enabled ? "transform" : undefined,
+        contain: "paint",
         "--gg-travel": `${motion.travel}%`,
         "--gg-zoom": `${motion.zoom}`,
         "--gg-rotate": `${motion.rotate}deg`,
@@ -110,17 +114,19 @@ export function useGrainGradient(options: GrainGradientReactOptions = {}) {
     () =>
       ({
         backgroundImage: activeGrainUrl,
-        backgroundSize: canvasGrainStyle?.backgroundSize ?? "100% 100%",
-        backgroundRepeat: canvasGrainStyle?.backgroundRepeat ?? "no-repeat",
+        backgroundSize: canvasGrainStyle?.backgroundSize ?? svgGrainLayerStyle.backgroundSize,
+        backgroundRepeat: canvasGrainStyle?.backgroundRepeat ?? svgGrainLayerStyle.backgroundRepeat,
         imageRendering: canvasGrainStyle?.imageRendering ?? "auto",
-        opacity: options.opacity ?? 0.34,
+        opacity: options.opacity ?? 0.2,
         mixBlendMode: (options.blendMode ?? "overlay") as CSSProperties["mixBlendMode"],
         pointerEvents: "none" as const,
+        contain: "paint",
       }) as CSSProperties,
     [
       activeGrainUrl,
       usesCanvasFallback,
       canvasGrainStyle,
+      svgGrainLayerStyle,
       options.opacity,
       options.blendMode,
       options.frequency,
