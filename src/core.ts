@@ -292,7 +292,7 @@ ${swirlBackgroundPosition}  background-repeat: no-repeat;
   transform: scale(1.12)${swirlTransform};
   transform-origin: 50% 50%;
   backface-visibility: hidden;
-${motion.enabled ? "  will-change: transform;\n" : ""}  contain: paint;
+${motion.enabled ? "  will-change: transform;\n" : ""}
   z-index: 0;
 }
 

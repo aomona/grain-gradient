@@ -90,7 +90,6 @@ export function useGrainGradient(options: GrainGradientReactOptions = {}) {
           ? `grain-gradient-react-mesh-${motion.preset} ${motion.duration}s ease-in-out infinite alternate`
           : undefined,
         willChange: motion.enabled ? "transform" : undefined,
-        contain: "paint",
         "--gg-travel": `${motion.travel}%`,
         "--gg-zoom": `${motion.zoom}`,
         "--gg-rotate": `${motion.rotate}deg`,

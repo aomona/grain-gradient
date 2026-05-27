@@ -165,7 +165,7 @@ contain: paint;
 The fixed CSS-pixel grain size keeps visible roughness more consistent across different container sizes and display scale factors, and avoids stretching the SVG noise to every element. Pass `width` / `height` / `size` when you want a different fixed grain canvas; these options now affect both SVG dimensions and the visible grain tile size.
 
 When motion is enabled, the generated CSS appends `animation` declarations, scoped `@keyframes`, and a `prefers-reduced-motion: reduce` override for the selected preset. The animation is CSS-only, so the SVG noise data URL is not regenerated per frame.
-`will-change: transform` is only emitted while motion is enabled to avoid keeping extra compositor layers alive for static backgrounds.
+`will-change: transform` is only emitted while motion is enabled to avoid keeping extra compositor layers alive for static backgrounds. Paint containment is only applied to the grain layer, not the blurred mesh layer, to avoid clipping blur overflow.
 
 ## React API
 
@@ -234,12 +234,12 @@ const { rootStyle, meshStyle, grainStyle, cssText } = useGrainGradient({
 
 Return value:
 
-| Key          | Description                                                                                                                                       |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `rootStyle`  | Relative/overflow-hidden container style                                                                                                          |
-| `meshStyle`  | Mesh layer style                                                                                                                                  |
+| Key          | Description                                                                                                                                                           |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rootStyle`  | Relative/overflow-hidden container style                                                                                                                              |
+| `meshStyle`  | Mesh layer style                                                                                                                                                      |
 | `grainStyle` | Active grain layer style. It starts as fixed-size repeated SVG turbulence and may switch to repeated Canvas PNG after hydration when `androidCanvasFallback` applies. |
-| `cssText`    | Minimal mesh background CSS text                                                                                                                  |
+| `cssText`    | Minimal mesh background CSS text                                                                                                                                      |
 
 ## Presets
 

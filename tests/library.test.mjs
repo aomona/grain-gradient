@@ -44,7 +44,7 @@ test("creates css snippet", () => {
   assert.ok(css.includes("inset: -8%"));
   assert.ok(css.includes("background-size: 3200px 2200px"));
   assert.ok(css.includes("background-repeat: repeat"));
-  assert.ok(css.includes("contain: paint"));
+  assert.equal(css.match(/contain: paint/g)?.length, 1);
   assert.ok(!css.includes("will-change: transform"));
 });
 
