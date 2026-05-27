@@ -34,6 +34,11 @@ export interface CanvasGrainStyle {
   imageRendering: "pixelated";
 }
 
+export interface GrainLayerStyle {
+  backgroundSize: string;
+  backgroundRepeat: "repeat";
+}
+
 export interface MeshGradientOptions {
   colors?: string[];
   baseColor?: string;
@@ -171,6 +176,16 @@ export function createCanvasGrainBackgroundSize(options: TurbulenceNoiseOptions 
   return `${Math.round(720 - density * 580)}px ${Math.round(720 - density * 580)}px`;
 }
 
+export function createGrainLayerStyle(options: TurbulenceNoiseOptions = {}): GrainLayerStyle {
+  const width = Math.floor(clamp(options.width ?? options.size ?? 3200, 256, 8192));
+  const height = Math.floor(clamp(options.height ?? options.size ?? 2200, 256, 8192));
+
+  return {
+    backgroundSize: `${width}px ${height}px`,
+    backgroundRepeat: "repeat",
+  };
+}
+
 export function createAndroidCanvasFallbackStyle(
   options: AndroidCanvasFallbackOptions = {},
 ): CanvasGrainStyle | null {
@@ -228,7 +243,7 @@ export function createTurbulenceNoise(options: TurbulenceNoiseOptions = {}): str
   const height = Math.floor(clamp(options.height ?? options.size ?? 2200, 256, 8192));
   const offset = ((1 - contrast) / 2).toFixed(3);
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="${baseFrequency}" numOctaves="${numOctaves}" seed="${seed}" stitchTiles="${stitchTiles ? "stitch" : "noStitch"}" /><feColorMatrix type="matrix" values="${contrast} 0 0 0 ${offset} 0 ${contrast} 0 0 ${offset} 0 0 ${contrast} 0 ${offset} 0 0 0 1 0" /><feComponentTransfer><feFuncR type="discrete" tableValues="0 1" /><feFuncG type="discrete" tableValues="0 1" /><feFuncB type="discrete" tableValues="0 1" /></feComponentTransfer></filter><rect width="100%" height="100%" filter="url(#n)" /></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none"><filter id="n" x="0" y="0" width="${width}" height="${height}" filterUnits="userSpaceOnUse"><feTurbulence type="fractalNoise" baseFrequency="${baseFrequency}" numOctaves="${numOctaves}" seed="${seed}" stitchTiles="${stitchTiles ? "stitch" : "noStitch"}" /><feColorMatrix type="matrix" values="${contrast} 0 0 0 ${offset} 0 ${contrast} 0 0 ${offset} 0 0 ${contrast} 0 ${offset} 0 0 0 1 0" /><feComponentTransfer><feFuncR type="discrete" tableValues="0 1" /><feFuncG type="discrete" tableValues="0 1" /><feFuncB type="discrete" tableValues="0 1" /></feComponentTransfer></filter><rect width="100%" height="100%" filter="url(#n)" /></svg>`;
 
   return encodeSvg(svg);
 }
@@ -252,6 +267,8 @@ export function createMeshGradient(options: MeshGradientOptions = {}): string {
 export function createGrainGradientCSS(options: GrainGradientCSSOptions = {}): string {
   const selector = options.selector ?? ".grain-gradient";
   const motionCSS = createGrainGradientMotionCSS(options);
+  const motion = normalizeMotion(options);
+  const grainLayerStyle = createGrainLayerStyle(options);
   const swirl = normalizeSwirl(options.swirl);
   const swirlBackgroundPosition = swirl.enabled
     ? `  background-position: ${swirl.backgroundPositionX}% ${swirl.backgroundPositionY}%;\n`
@@ -275,7 +292,7 @@ ${swirlBackgroundPosition}  background-repeat: no-repeat;
   transform: scale(1.12)${swirlTransform};
   transform-origin: 50% 50%;
   backface-visibility: hidden;
-  will-change: transform;
+${motion.enabled ? "  will-change: transform;\n" : ""}
   z-index: 0;
 }
 
@@ -285,10 +302,11 @@ ${selector}::after {
   inset: -8%;
   pointer-events: none;
   background-image: ${createTurbulenceNoise(options)};
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  opacity: ${clamp(options.opacity ?? 0.34, 0, 1)};
+  background-size: ${grainLayerStyle.backgroundSize};
+  background-repeat: ${grainLayerStyle.backgroundRepeat};
+  opacity: ${clamp(options.opacity ?? 0.2, 0, 1)};
   mix-blend-mode: ${options.blendMode ?? "overlay"};
+  contain: paint;
   z-index: 1;
 }
 
