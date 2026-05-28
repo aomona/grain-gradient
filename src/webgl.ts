@@ -3,6 +3,7 @@ import { clamp, normalizeMotion, normalizeSwirl } from "./internal.js";
 
 export interface WebGLMeshGradientOptions extends MeshGradientOptions, MotionOptions {
   maxPixelRatio?: number;
+  motionMaxPixelRatio?: number;
   fps?: number;
   pauseWhenHidden?: boolean;
 }
@@ -17,6 +18,7 @@ export interface ResolvedWebGLMeshGradientOptions {
   motionSpeed: number;
   motionIntensity: number;
   maxPixelRatio: number;
+  motionMaxPixelRatio: number;
   fps: number;
   pauseWhenHidden: boolean;
 }
@@ -103,17 +105,13 @@ void main() {
     color = u_colors[5];
   }
 
-  float swirlOffset = u_swirl * 0.0012;
   for (int layer = 5; layer >= 0; layer--) {
     if (layer >= u_colorCount) {
       continue;
     }
-    float i = float(layer);
-    vec2 motionOffset = vec2(swirlOffset * sin(i + u_time * 6.2831853), -swirlOffset * cos(i + u_time * 4.2));
-    vec2 point = u_positions[layer] + motionOffset * u_motion;
+    vec2 point = u_positions[layer];
     vec2 delta = (uv - point) * aspect;
-    float radiusBoost = layer == 2 ? 1.28 : 1.0;
-    float radius = u_sizes[layer] * max(aspect.x, aspect.y) * 1.35 * radiusBoost * (1.0 + u_motion * 0.1 * sin(u_time * 6.2831853 + i));
+    float radius = u_sizes[layer] * max(aspect.x, aspect.y) * 1.35;
     float blob = clamp(1.0 - length(delta) / max(radius, 0.001), 0.0, 1.0);
     float opacity = 0.72;
     if (layer == 0) {
@@ -186,7 +184,12 @@ export function resolveWebGLMeshGradientOptions(
     motionSpeed: clamp(options.motionSpeed ?? 0, 0, 100),
     motionIntensity: clamp(options.motionIntensity ?? 50, 0, 100),
     maxPixelRatio: clamp(options.maxPixelRatio ?? 1.25, 0.5, 3),
-    fps: clamp(options.fps ?? 45, 1, 60),
+    motionMaxPixelRatio: clamp(
+      options.motionMaxPixelRatio ?? Math.min(options.maxPixelRatio ?? 1.25, 0.75),
+      0.5,
+      3,
+    ),
+    fps: clamp(options.fps ?? 30, 1, 60),
     pauseWhenHidden: options.pauseWhenHidden ?? true,
   };
 }
@@ -280,16 +283,60 @@ export function createWebGLMeshRenderer(
     let running = false;
     let lastFrame = 0;
     let startTime = performance.now();
+    let motion = normalizeMotion(options);
+    let motionDuration = Math.max(motion.duration, 1);
+    let motionAmount = motion.enabled ? options.motionIntensity / 100 : 0;
+    let swirlOffset = normalizeSwirl(options.swirl).value * 0.0012;
+    const animatedPositions = new Float32Array(BLOB_POSITIONS.length);
+    const animatedSizes = new Float32Array(BLOB_SIZES.length);
+
+    const updateAnimatedGeometry = (time: number) => {
+      const cycle = time * 6.2831853;
+      for (let layer = 0; layer < BLOB_SIZES.length; layer++) {
+        const index = layer * 2;
+        animatedPositions[index] =
+          BLOB_POSITIONS[index] + swirlOffset * Math.sin(layer + cycle) * motionAmount;
+        animatedPositions[index + 1] =
+          BLOB_POSITIONS[index + 1] - swirlOffset * Math.cos(layer + time * 4.2) * motionAmount;
+
+        const radiusBoost = layer === 2 ? 1.28 : 1;
+        animatedSizes[layer] =
+          BLOB_SIZES[layer] * radiusBoost * (1 + motionAmount * 0.1 * Math.sin(cycle + layer));
+      }
+
+      gl.uniform2fv(uniforms.positions, animatedPositions);
+      gl.uniform1fv(uniforms.sizes, animatedSizes);
+    };
+
+    const cancelLoop = () => {
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+      animationFrame = 0;
+    };
+
+    const render = (now: number) => {
+      const elapsed = (now - startTime) / 1000;
+      const time = elapsed / motionDuration;
+      gl.useProgram(program);
+      gl.uniform1f(uniforms.time, time);
+      updateAnimatedGeometry(time);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    };
+
+    const requestLoop = () => {
+      if (!animationFrame) animationFrame = requestAnimationFrame(draw);
+    };
 
     const setStaticUniforms = () => {
-      const motion = normalizeMotion(options);
+      motion = normalizeMotion(options);
+      motionDuration = Math.max(motion.duration, 1);
       const swirl = normalizeSwirl(options.swirl);
+      motionAmount = motion.enabled ? options.motionIntensity / 100 : 0;
+      swirlOffset = swirl.value * 0.0012;
       const colorValues = options.colors.flatMap(parseHexColor);
       const baseColor = parseHexColor(options.baseColor);
       gl.useProgram(program);
       gl.uniform1f(uniforms.saturation, options.saturation);
       gl.uniform1f(uniforms.swirl, swirl.value);
-      const motionAmount = motion.enabled ? options.motionIntensity / 100 : 0;
       gl.uniform1f(uniforms.motion, motionAmount);
       gl.uniform1f(uniforms.zoom, motion.enabled ? Number(motion.zoom) : 1);
       gl.uniform1f(uniforms.rotate, (Number(motion.rotate) * Math.PI) / 180);
@@ -297,24 +344,21 @@ export function createWebGLMeshRenderer(
       gl.uniform3fv(uniforms.baseColor, baseColor);
       gl.uniform3fv(uniforms.colors, colorValues);
       gl.uniform1i(uniforms.colorCount, options.colorCount);
-      gl.uniform2fv(uniforms.positions, BLOB_POSITIONS);
-      gl.uniform1fv(uniforms.sizes, BLOB_SIZES);
+      updateAnimatedGeometry(0);
     };
 
     const draw = (now: number) => {
+      animationFrame = 0;
       if (!running) return;
-      animationFrame = requestAnimationFrame(draw);
+      if (!motion.enabled) return;
+      requestLoop();
       if (options.pauseWhenHidden && typeof document !== "undefined" && document.hidden) return;
 
       const minFrameTime = 1000 / options.fps;
       if (now - lastFrame < minFrameTime) return;
       lastFrame = now;
 
-      const elapsed = (now - startTime) / 1000;
-      gl.useProgram(program);
-      gl.uniform1f(uniforms.time, elapsed / Math.max(normalizeMotion(options).duration, 1));
-      gl.uniform2f(uniforms.resolution, canvas.width, canvas.height);
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      render(now);
     };
 
     const renderer: WebGLMeshRenderer = {
@@ -324,22 +368,29 @@ export function createWebGLMeshRenderer(
         options = resolveWebGLMeshGradientOptions(rawOptions);
         setStaticUniforms();
         renderer.resize();
+        if (!running) return;
+        if (motion.enabled) requestLoop();
+        else {
+          cancelLoop();
+          render(performance.now());
+        }
       },
       start() {
         if (running) return;
         running = true;
         startTime = performance.now();
         lastFrame = 0;
-        animationFrame = requestAnimationFrame(draw);
+        if (motion.enabled) requestLoop();
+        else render(startTime);
       },
       stop() {
         running = false;
-        if (animationFrame) cancelAnimationFrame(animationFrame);
-        animationFrame = 0;
+        cancelLoop();
       },
       resize() {
         const rect = canvas.getBoundingClientRect();
-        const pixelRatio = Math.min(window.devicePixelRatio || 1, options.maxPixelRatio);
+        const pixelRatioLimit = motion.enabled ? options.motionMaxPixelRatio : options.maxPixelRatio;
+        const pixelRatio = Math.min(window.devicePixelRatio || 1, pixelRatioLimit);
         const width = Math.max(1, Math.round(rect.width * pixelRatio));
         const height = Math.max(1, Math.round(rect.height * pixelRatio));
         if (canvas.width !== width || canvas.height !== height) {
@@ -347,6 +398,9 @@ export function createWebGLMeshRenderer(
           canvas.height = height;
         }
         gl.viewport(0, 0, width, height);
+        gl.useProgram(program);
+        gl.uniform2f(uniforms.resolution, width, height);
+        if (running && !motion.enabled) render(performance.now());
       },
       destroy() {
         renderer.stop();

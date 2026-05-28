@@ -94,8 +94,9 @@ export function AnimatedHero() {
       motionPreset="drift"
       motionSpeed={38}
       motionIntensity={46}
-      // Caps canvas pixel density for high-DPI performance.
+      // Caps static canvas pixel density for high-DPI performance.
       maxPixelRatio={1.25}
+      // Motion defaults are already lightweight: fps=30, motionMaxPixelRatio=0.75.
       style={{ minHeight: "100vh" }}
     />
   );
@@ -111,7 +112,12 @@ const WebGLGrainGradient = dynamic(
 );
 ```
 
-Use CSS/SVG for static backgrounds and exports; use WebGL as the default choice when smooth continuous mesh animation matters. Keep `maxPixelRatio` capped near `1` to `1.5` for full-screen backgrounds so high-DPI displays do not multiply GPU fill cost.
+Use CSS/SVG for static backgrounds and exports; use WebGL as the default choice when smooth continuous mesh animation matters. WebGL renders once and stops when motion is disabled. When motion is enabled, the defaults are tuned for full-screen performance: `fps: 30` and `motionMaxPixelRatio: 0.75`. Raise them only when you need smoother motion or sharper animated rendering. `maxPixelRatio` can stay a little higher for static sharpness.
+
+```tsx
+// Explicit lightweight animated fullscreen preset, matching the defaults
+<WebGLGrainGradient motionPreset="drift" motionSpeed={35} fps={30} motionMaxPixelRatio={0.75} />
+```
 
 ## Development
 
