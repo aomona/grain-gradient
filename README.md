@@ -78,6 +78,29 @@ export default async function Page() {
 
 React is a peer dependency via the `grain-gradient/react` subpath.
 
+## WebGL experimental
+
+For continuously animated mesh backgrounds, use the optional WebGL renderer. The default CSS/SVG renderer remains the SSR-safe fallback.
+
+```tsx
+import { WebGLGrainGradient } from "grain-gradient/webgl/react";
+
+export function AnimatedHero() {
+  return (
+    <WebGLGrainGradient
+      colors={["#c2e812", "#ff7f11", "#ee4266", "#2a1e5c"]}
+      motionPreset="drift"
+      motionSpeed={38}
+      motionIntensity={46}
+      maxPixelRatio={1.25}
+      style={{ minHeight: "100vh" }}
+    />
+  );
+}
+```
+
+Use CSS/SVG for static backgrounds and exports; use WebGL as the default choice when smooth continuous mesh animation matters.
+
 ## Development
 
 - `npm run build`: compile the TypeScript source to `dist/`
