@@ -33,6 +33,14 @@
     "./react": {
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js"
+    },
+    "./webgl": {
+      "types": "./dist/webgl.d.ts",
+      "import": "./dist/webgl.js"
+    },
+    "./webgl/react": {
+      "types": "./dist/webgl-react.d.ts",
+      "import": "./dist/webgl-react.js"
     }
   },
   "scripts": {

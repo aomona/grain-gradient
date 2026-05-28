@@ -23,6 +23,14 @@ import {
 import { GrainGradient, useGrainGradient } from "grain-gradient/react";
 ```
 
+```ts
+import { createWebGLMeshRenderer } from "grain-gradient/webgl";
+```
+
+```tsx
+import { WebGLGrainGradient } from "grain-gradient/webgl/react";
+```
+
 `grain-gradient/react` is an import path, not a separate package.
 
 ## Core API
@@ -167,6 +175,8 @@ The fixed CSS-pixel grain size keeps visible roughness more consistent across di
 When motion is enabled, the generated CSS appends `animation` declarations, scoped `@keyframes`, and a `prefers-reduced-motion: reduce` override for the selected preset. The animation is CSS-only, so the SVG noise data URL is not regenerated per frame.
 `will-change: transform` is only emitted while motion is enabled to avoid keeping extra compositor layers alive for static backgrounds. Paint containment is only applied to the grain layer, not the blurred mesh layer, to avoid clipping blur overflow.
 
+The CSS motion presets are transform-only. `breathe` no longer animates `filter`, and `orbit` no longer animates `background-position`, because both properties can trigger repeated paint work on large blurred backgrounds.
+
 ## React API
 
 ### `<GrainGradient />`
@@ -240,6 +250,63 @@ Return value:
 | `meshStyle`  | Mesh layer style                                                                                                                                                      |
 | `grainStyle` | Active grain layer style. It starts as fixed-size repeated SVG turbulence and may switch to repeated Canvas PNG after hydration when `androidCanvasFallback` applies. |
 | `cssText`    | Minimal mesh background CSS text                                                                                                                                      |
+
+## WebGL API experimental
+
+Animated fullscreen mesh gradients can be rendered with an optional WebGL canvas renderer. The default CSS/SVG renderer remains the SSR-safe baseline and fallback; WebGL is intended for client-side animated mesh motion.
+
+```ts
+import { createWebGLMeshRenderer } from "grain-gradient/webgl";
+
+const canvas = document.querySelector("canvas")!;
+const renderer = createWebGLMeshRenderer(canvas, {
+  colors: ["#c2e812", "#ff7f11", "#ee4266", "#2a1e5c"],
+  motionPreset: "drift",
+  motionSpeed: 38,
+  motionIntensity: 46,
+  maxPixelRatio: 1.25,
+});
+
+renderer?.start();
+```
+
+The renderer exposes:
+
+- `update(options)` — update colors, saturation, swirl, motion, `maxPixelRatio`, or `fps`
+- `start()` / `stop()` — control the animation loop
+- `resize()` — sync the canvas backing store to its CSS size and capped DPR
+- `destroy()` — stop animation and release WebGL resources
+
+React users can use the progressive-enhancement component:
+
+```tsx
+import { WebGLGrainGradient } from "grain-gradient/webgl/react";
+
+export function AnimatedBackground() {
+  return (
+    <WebGLGrainGradient
+      colors={["#c2e812", "#ff7f11", "#ee4266", "#2a1e5c"]}
+      motionPreset="drift"
+      motionSpeed={38}
+      motionIntensity={46}
+      maxPixelRatio={1.25}
+      style={{ minHeight: "100vh" }}
+    />
+  );
+}
+```
+
+`WebGLGrainGradient` renders the existing CSS mesh as fallback, then fades in a WebGL canvas after the client creates a working context. The SVG/canvas grain layer is still overlaid above the WebGL mesh. If WebGL is unavailable or the context is lost, the CSS fallback remains visible.
+
+WebGL options:
+
+| Option            | Default | Note                                                        |
+| ----------------- | ------- | ----------------------------------------------------------- |
+| `maxPixelRatio`   | `1.25`  | Caps canvas backing resolution to avoid high-DPR GPU spikes |
+| `fps`             | `45`    | Caps renderer frame rate                                    |
+| `pauseWhenHidden` | `true`  | Skips drawing while `document.hidden`                       |
+
+Prefer CSS/SVG for static or SSR-only backgrounds. Prefer WebGL as the default renderer for smooth continuous mesh animation.
 
 ## Presets
 

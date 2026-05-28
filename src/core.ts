@@ -69,9 +69,6 @@ const canvasNoiseCache = new Map<string, string>();
 
 const getBrowserUserAgent = () => (typeof navigator === "undefined" ? "" : navigator.userAgent);
 
-const shiftedPosition = (x: number, y: number, swirl: ReturnType<typeof normalizeSwirl>) =>
-  `${(x + swirl.offsetX).toFixed(1)}% ${(y + swirl.offsetY).toFixed(1)}%`;
-
 const canvasNoiseKey = (options: TurbulenceNoiseOptions = {}) => {
   const seed = Math.floor(clamp(options.seed ?? 1, 0, 9999));
   const frequency = clamp(options.frequency ?? options.baseFrequency ?? 1.25, 0.04, 2.4);
@@ -225,8 +222,8 @@ function createGrainGradientMotionCSS(options: GrainGradientCSSOptions = {}): st
 
   const motionKeyframes: Record<Exclude<MotionPreset, "none">, string> = {
     drift: `@keyframes ${meshName} {\n  0% { transform: scale(1.12)${swirlTransform} translate3d(-${motion.travel}%, -${motion.travel}%, 0); }\n  100% { transform: scale(${motion.zoom})${swirlTransform} translate3d(${motion.travel}%, ${motion.travel}%, 0); }\n}`,
-    breathe: `@keyframes ${meshName} {\n  0% { transform: scale(1.12)${swirlTransform}; filter: blur(${clamp(options.blur ?? 42, 0, 80)}px) saturate(${clamp(options.saturation ?? options.intensity ?? 1.18, 0.2, 2.5)}); }\n  100% { transform: scale(${motion.zoom})${swirlTransform}; filter: blur(${clamp((options.blur ?? 42) + Number(motion.travel), 0, 80)}px) saturate(${clamp((options.saturation ?? options.intensity ?? 1.18) + 0.18, 0.2, 2.5)}); }\n}`,
-    orbit: `@keyframes ${meshName} {\n  0% { transform: scale(1.12)${swirlTransform} rotate(-${motion.rotate}deg) translate3d(-${motion.travel}%, ${motion.travel}%, 0); background-position: ${shiftedPosition(46, 54, swirl)}; }\n  100% { transform: scale(${motion.zoom})${swirlTransform} rotate(${motion.rotate}deg) translate3d(${motion.travel}%, -${motion.travel}%, 0); background-position: ${shiftedPosition(54, 46, swirl)}; }\n}`,
+    breathe: `@keyframes ${meshName} {\n  0% { transform: scale(1.12)${swirlTransform}; }\n  100% { transform: scale(${motion.zoom})${swirlTransform}; }\n}`,
+    orbit: `@keyframes ${meshName} {\n  0% { transform: scale(1.12)${swirlTransform} rotate(-${motion.rotate}deg) translate3d(-${motion.travel}%, ${motion.travel}%, 0); }\n  100% { transform: scale(${motion.zoom})${swirlTransform} rotate(${motion.rotate}deg) translate3d(${motion.travel}%, -${motion.travel}%, 0); }\n}`,
   };
   const keyframes = motionKeyframes[motion.preset as Exclude<MotionPreset, "none">];
 

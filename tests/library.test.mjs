@@ -13,6 +13,7 @@ import {
   presets,
   shouldUseAndroidCanvasFallback,
 } from "../dist/index.js";
+import { isWebGLAvailable, resolveWebGLMeshGradientOptions } from "../dist/webgl.js";
 
 test("exports presets", () => {
   assert.equal(Object.keys(presets).length, 5);
@@ -79,11 +80,18 @@ test("clamps swirl below 0", () => {
   assert.ok(!css.includes("scale(1.12) translate3d"));
 });
 
-test("keeps swirl offsets in orbit keyframes", () => {
+test("keeps orbit animation transform-only", () => {
   const css = createGrainGradientCSS({ swirl: 50, motionPreset: "orbit", motionSpeed: 40 });
-  assert.ok(css.includes("background-position: 52.0% 49.0%"));
-  assert.ok(css.includes("background-position: 60.0% 41.0%"));
+  assert.ok(!css.includes("background-position: 52.0% 49.0%"));
+  assert.ok(!css.includes("background-position: 60.0% 41.0%"));
   assert.ok(css.includes("scale(1.200) rotate(6.00deg) rotate("));
+});
+
+test("keeps breathe animation transform-only", () => {
+  const css = createGrainGradientCSS({ motionPreset: "breathe", motionSpeed: 40 });
+  const keyframes = css.split("@keyframes").slice(1).join("@keyframes");
+  assert.ok(keyframes.includes("scale("));
+  assert.ok(!keyframes.includes("filter:"));
 });
 
 test("keeps drift animation transform-only", () => {
@@ -208,4 +216,20 @@ test("creates canvas fallback style when canvas is available", () => {
     if (originalDocument === undefined) delete globalThis.document;
     else globalThis.document = originalDocument;
   }
+});
+
+test("resolves webgl mesh options without browser globals", () => {
+  assert.equal(isWebGLAvailable(), false);
+  const options = resolveWebGLMeshGradientOptions({
+    colors: ["#000", "#fff"],
+    maxPixelRatio: 10,
+    fps: 120,
+    motionSpeed: 40,
+  });
+  assert.equal(options.colors.length, 6);
+  assert.deepEqual(options.colors.slice(0, 4), ["#000", "#fff", "#fff", "#fff"]);
+  assert.equal(options.colorCount, 2);
+  assert.equal(options.maxPixelRatio, 3);
+  assert.equal(options.fps, 60);
+  assert.equal(options.motionSpeed, 40);
 });
