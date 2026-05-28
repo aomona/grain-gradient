@@ -265,6 +265,8 @@ const renderer = createWebGLMeshRenderer(canvas, {
   motionSpeed: 38,
   motionIntensity: 46,
   maxPixelRatio: 1.25,
+  motionMaxPixelRatio: 0.75,
+  fps: 30,
 });
 
 renderer?.start();
@@ -272,7 +274,7 @@ renderer?.start();
 
 The renderer exposes:
 
-- `update(options)` — update colors, saturation, swirl, motion, `maxPixelRatio`, or `fps`
+- `update(options)` — update colors, saturation, swirl, motion, `maxPixelRatio`, `motionMaxPixelRatio`, or `fps`
 - `start()` / `stop()` — control the animation loop
 - `resize()` — sync the canvas backing store to its CSS size and capped DPR
 - `destroy()` — stop animation and release WebGL resources
@@ -290,6 +292,8 @@ export function AnimatedBackground() {
       motionSpeed={38}
       motionIntensity={46}
       maxPixelRatio={1.25}
+      motionMaxPixelRatio={0.75}
+      fps={30}
       style={{ minHeight: "100vh" }}
     />
   );
@@ -300,13 +304,24 @@ export function AnimatedBackground() {
 
 WebGL options:
 
-| Option            | Default | Note                                                        |
-| ----------------- | ------- | ----------------------------------------------------------- |
-| `maxPixelRatio`   | `1.25`  | Caps canvas backing resolution to avoid high-DPR GPU spikes |
-| `fps`             | `45`    | Caps renderer frame rate                                    |
-| `pauseWhenHidden` | `true`  | Skips drawing while `document.hidden`                       |
+| Option                | Default                    | Note                                                               |
+| --------------------- | -------------------------- | ------------------------------------------------------------------ |
+| `maxPixelRatio`       | `1.25`                     | Caps static canvas backing resolution to avoid high-DPR GPU spikes |
+| `motionMaxPixelRatio` | `min(maxPixelRatio, 0.75)` | Caps canvas backing resolution while motion is active              |
+| `fps`                 | `30`                       | Caps renderer frame rate                                           |
+| `pauseWhenHidden`     | `true`                     | Skips drawing while `document.hidden`                              |
 
 Prefer CSS/SVG for static or SSR-only backgrounds. Prefer WebGL as the default renderer for smooth continuous mesh animation.
+
+Performance notes:
+
+- When `motionPreset` is `"none"` or `motionSpeed` is `0`, WebGL draws once and stops instead of keeping a `requestAnimationFrame` loop alive.
+- While motion is active, blob position and size animation is computed once per frame and passed to the shader as uniforms, avoiding per-pixel trigonometry in the fragment shader.
+- For sharper or smoother animated backgrounds, raise `motionMaxPixelRatio` toward `1` to `1.5` or `fps` toward `45` to `60`.
+
+```tsx
+<WebGLGrainGradient motionPreset="drift" motionSpeed={35} fps={30} motionMaxPixelRatio={0.75} />
+```
 
 ## Presets
 

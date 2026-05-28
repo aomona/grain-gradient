@@ -230,6 +230,7 @@ test("resolves webgl mesh options without browser globals", () => {
   assert.deepEqual(options.colors.slice(0, 4), ["#000", "#fff", "#fff", "#fff"]);
   assert.equal(options.colorCount, 2);
   assert.equal(options.maxPixelRatio, 3);
+  assert.equal(options.motionMaxPixelRatio, 0.75);
   assert.equal(options.fps, 60);
   assert.equal(options.motionSpeed, 40);
 });

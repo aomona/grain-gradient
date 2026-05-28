@@ -53,6 +53,7 @@ export const WebGLGrainGradient = memo(function WebGLGrainGradient(props: WebGLG
     options.motionSpeed,
     options.motionIntensity,
     options.maxPixelRatio,
+    options.motionMaxPixelRatio,
     options.fps,
     options.pauseWhenHidden,
   ]);
