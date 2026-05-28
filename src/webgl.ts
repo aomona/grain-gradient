@@ -364,13 +364,19 @@ export function createWebGLMeshRenderer(
     const renderer: WebGLMeshRenderer = {
       canvas,
       update(nextOptions) {
+        const wasMotionEnabled = motion.enabled;
         rawOptions = { ...rawOptions, ...nextOptions };
         options = resolveWebGLMeshGradientOptions(rawOptions);
         setStaticUniforms();
         renderer.resize();
         if (!running) return;
-        if (motion.enabled) requestLoop();
-        else {
+        if (motion.enabled) {
+          if (!wasMotionEnabled || !animationFrame) {
+            startTime = performance.now();
+            lastFrame = 0;
+          }
+          requestLoop();
+        } else {
           cancelLoop();
           render(performance.now());
         }
