@@ -274,7 +274,8 @@ export function createWebGLMeshRenderer(
       sizes: gl.getUniformLocation(program, "u_sizes"),
     };
 
-    let options = resolveWebGLMeshGradientOptions(initialOptions);
+    let rawOptions: WebGLMeshGradientOptions = { ...initialOptions };
+    let options = resolveWebGLMeshGradientOptions(rawOptions);
     let animationFrame = 0;
     let running = false;
     let lastFrame = 0;
@@ -319,7 +320,8 @@ export function createWebGLMeshRenderer(
     const renderer: WebGLMeshRenderer = {
       canvas,
       update(nextOptions) {
-        options = resolveWebGLMeshGradientOptions(nextOptions);
+        rawOptions = { ...rawOptions, ...nextOptions };
+        options = resolveWebGLMeshGradientOptions(rawOptions);
         setStaticUniforms();
         renderer.resize();
       },

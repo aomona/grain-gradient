@@ -82,6 +82,8 @@ React is a peer dependency via the `grain-gradient/react` subpath.
 
 For continuously animated mesh backgrounds, use the optional WebGL renderer. The default CSS/SVG renderer remains the SSR-safe fallback.
 
+The WebGL React component is client-only because it creates a `<canvas>` context. In SSR frameworks such as Next.js, render it from a client component and keep CSS/SVG available as the fallback for server output, static exports, unsupported browsers, and lost WebGL contexts.
+
 ```tsx
 import { WebGLGrainGradient } from "grain-gradient/webgl/react";
 
@@ -99,7 +101,7 @@ export function AnimatedHero() {
 }
 ```
 
-Use CSS/SVG for static backgrounds and exports; use WebGL as the default choice when smooth continuous mesh animation matters.
+Use CSS/SVG for static backgrounds and exports; use WebGL as the default choice when smooth continuous mesh animation matters. Keep `maxPixelRatio` capped near `1` to `1.5` for full-screen backgrounds so high-DPI displays do not multiply GPU fill cost.
 
 ## Development
 

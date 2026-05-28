@@ -626,6 +626,7 @@
       const { createAndroidCanvasFallbackStyle, createGrainGradientCSS, presets } = api;
       const { createWebGLMeshRenderer } = webglApi;
       let webglRenderer = null;
+      let cleanupWebGLContextLoss = null;
 
       const presetNames = Object.keys(presets);
       elements.preset.innerHTML = presetNames
@@ -737,11 +738,13 @@
 
       const ensureWebGLRenderer = (options) => {
         if (state.renderer !== "webgl") {
+          cleanupWebGLContextLoss?.();
+          cleanupWebGLContextLoss = null;
           webglRenderer?.destroy();
           webglRenderer = null;
           elements.preview.dataset.renderer = "css";
           elements.preview.querySelector(".preview-canvas").dataset.ready = "false";
-          return;
+          return { ok: true, mode: "css" };
         }
 
         const canvas = elements.preview.querySelector(".preview-canvas");
@@ -754,24 +757,29 @@
             state.renderer = "css";
             syncInputs();
             elements.preview.dataset.renderer = "css";
-            return;
+            return { ok: false, mode: "css" };
           }
-          canvas.addEventListener(
-            "webglcontextlost",
-            (event) => {
-              event.preventDefault();
-              webglRenderer?.destroy();
-              webglRenderer = null;
-              canvas.dataset.ready = "false";
-              elements.preview.dataset.renderer = "css";
-              setFeedback("error", "WebGL context lost", "Falling back to the CSS renderer.");
-            },
-            { once: true },
-          );
+          const handleContextLoss = (event) => {
+            event.preventDefault();
+            cleanupWebGLContextLoss?.();
+            cleanupWebGLContextLoss = null;
+            webglRenderer?.destroy();
+            webglRenderer = null;
+            canvas.dataset.ready = "false";
+            elements.preview.dataset.renderer = "css";
+            state.renderer = "css";
+            syncInputs();
+            setFeedback("error", "WebGL context lost", "Falling back to the CSS renderer.");
+          };
+          canvas.addEventListener("webglcontextlost", handleContextLoss);
+          cleanupWebGLContextLoss = () => {
+            canvas.removeEventListener("webglcontextlost", handleContextLoss);
+          };
           webglRenderer.start();
           canvas.dataset.ready = "true";
         }
         webglRenderer.update(options);
+        return { ok: true, mode: "webgl" };
       };
 
       const createFallbackCSS = (options) => {
@@ -931,15 +939,17 @@
           const options = createPreviewOptions();
           elements.previewCss.textContent =
             createGrainGradientCSS(options) + createFallbackCSS(options);
-          ensureWebGLRenderer(options);
+          const rendererResult = ensureWebGLRenderer(options);
           syncLabels();
-          setFeedback(
-            "ready",
-            "Ready",
-            state.renderer === "webgl"
-              ? "Preview is rendered with experimental WebGL mesh and CSS grain fallback."
-              : "Preview is rendered with the exported core CSS.",
-          );
+          if (rendererResult.ok) {
+            setFeedback(
+              "ready",
+              "Ready",
+              rendererResult.mode === "webgl"
+                ? "Preview is rendered with experimental WebGL mesh and CSS grain fallback."
+                : "Preview is rendered with the exported core CSS.",
+            );
+          }
         } catch (error) {
           elements.previewCss.textContent = "";
           setFeedback(
