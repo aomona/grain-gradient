@@ -304,12 +304,12 @@ export function AnimatedBackground() {
 
 WebGL options:
 
-| Option                | Default                       | Note                                                                 |
-| --------------------- | ----------------------------- | -------------------------------------------------------------------- |
-| `maxPixelRatio`       | `1.25`                        | Caps static canvas backing resolution to avoid high-DPR GPU spikes   |
-| `motionMaxPixelRatio` | `min(maxPixelRatio, 0.75)`    | Caps canvas backing resolution while motion is active                |
-| `fps`                 | `30`                          | Caps renderer frame rate                                             |
-| `pauseWhenHidden`     | `true`                        | Skips drawing while `document.hidden`                                |
+| Option                | Default                    | Note                                                               |
+| --------------------- | -------------------------- | ------------------------------------------------------------------ |
+| `maxPixelRatio`       | `1.25`                     | Caps static canvas backing resolution to avoid high-DPR GPU spikes |
+| `motionMaxPixelRatio` | `min(maxPixelRatio, 0.75)` | Caps canvas backing resolution while motion is active              |
+| `fps`                 | `30`                       | Caps renderer frame rate                                           |
+| `pauseWhenHidden`     | `true`                     | Skips drawing while `document.hidden`                              |
 
 Prefer CSS/SVG for static or SSR-only backgrounds. Prefer WebGL as the default renderer for smooth continuous mesh animation.
 

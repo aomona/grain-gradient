@@ -395,7 +395,9 @@ export function createWebGLMeshRenderer(
       },
       resize() {
         const rect = canvas.getBoundingClientRect();
-        const pixelRatioLimit = motion.enabled ? options.motionMaxPixelRatio : options.maxPixelRatio;
+        const pixelRatioLimit = motion.enabled
+          ? options.motionMaxPixelRatio
+          : options.maxPixelRatio;
         const pixelRatio = Math.min(window.devicePixelRatio || 1, pixelRatioLimit);
         const width = Math.max(1, Math.round(rect.width * pixelRatio));
         const height = Math.max(1, Math.round(rect.height * pixelRatio));
