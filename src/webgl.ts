@@ -39,6 +39,7 @@ export interface WebGLMeshRenderer {
 const DEFAULT_COLORS = ["#7c3aed", "#06b6d4", "#f97316", "#f43f5e"];
 const BLOB_POSITIONS = [0.12, 0.18, 0.86, 0.16, 0.7, 0.82, 0.2, 0.88, 0.5, 0.46, 0.18, 0.56];
 const BLOB_SIZES = [0.34, 0.32, 0.36, 0.32, 0.3, 0.28];
+const TAU = 6.2831853;
 
 const normalizeGrainSeed = (seed: number): number => {
   const n = Math.floor(clamp(seed, 0, 9999));
@@ -64,13 +65,11 @@ precision mediump float;
 varying vec2 v_uv;
 
 uniform vec2 u_resolution;
-uniform float u_time;
 uniform float u_saturation;
-uniform float u_swirl;
-uniform float u_motion;
-uniform float u_zoom;
-uniform float u_rotate;
-uniform float u_travel;
+uniform float u_frameRotationSin;
+uniform float u_frameRotationCos;
+uniform float u_frameScale;
+uniform vec2 u_frameTravel;
 uniform float u_grainOpacity;
 uniform float u_grainScale;
 uniform float u_grainContrast;
@@ -86,9 +85,7 @@ vec3 saturateColor(vec3 color, float amount) {
   return mix(vec3(gray), color, amount);
 }
 
-vec2 rotate2d(vec2 value, float angle) {
-  float s = sin(angle);
-  float c = cos(angle);
+vec2 rotate2d(vec2 value, float s, float c) {
   return mat2(c, -s, s, c) * value;
 }
 
@@ -114,13 +111,8 @@ void main() {
   vec2 aspect = vec2(u_resolution.x / max(u_resolution.y, 1.0), 1.0);
   vec2 uv = v_uv;
   vec2 centered = uv - 0.5;
-  float wave = sin(u_time * 6.2831853);
-  float orbit = cos(u_time * 6.2831853);
-  centered = rotate2d(centered, u_swirl * 0.0022);
-  centered /= 1.0 + u_swirl * 0.004;
-  centered = rotate2d(centered, u_rotate * wave);
-  centered /= max(u_zoom + u_motion * wave * 0.04, 0.1);
-  uv = centered + 0.5 + vec2(u_travel * wave, u_travel * orbit);
+  centered = rotate2d(centered, u_frameRotationSin, u_frameRotationCos) / u_frameScale;
+  uv = centered + 0.5 + u_frameTravel;
 
   float t = clamp((uv.x + uv.y) * 0.5, 0.0, 1.0);
   float segment = t * max(float(u_colorCount - 1), 1.0);
@@ -312,13 +304,11 @@ export function createWebGLMeshRenderer(
     const positionLocation = gl.getAttribLocation(program, "a_position");
     const uniforms = {
       resolution: gl.getUniformLocation(program, "u_resolution"),
-      time: gl.getUniformLocation(program, "u_time"),
       saturation: gl.getUniformLocation(program, "u_saturation"),
-      swirl: gl.getUniformLocation(program, "u_swirl"),
-      motion: gl.getUniformLocation(program, "u_motion"),
-      zoom: gl.getUniformLocation(program, "u_zoom"),
-      rotate: gl.getUniformLocation(program, "u_rotate"),
-      travel: gl.getUniformLocation(program, "u_travel"),
+      frameRotationSin: gl.getUniformLocation(program, "u_frameRotationSin"),
+      frameRotationCos: gl.getUniformLocation(program, "u_frameRotationCos"),
+      frameScale: gl.getUniformLocation(program, "u_frameScale"),
+      frameTravel: gl.getUniformLocation(program, "u_frameTravel"),
       grainOpacity: gl.getUniformLocation(program, "u_grainOpacity"),
       grainScale: gl.getUniformLocation(program, "u_grainScale"),
       grainContrast: gl.getUniformLocation(program, "u_grainContrast"),
@@ -339,12 +329,18 @@ export function createWebGLMeshRenderer(
     let motion = normalizeMotion(options);
     let motionDuration = Math.max(motion.duration, 1);
     let motionAmount = motion.enabled ? options.motionIntensity / 100 : 0;
-    let swirlOffset = normalizeSwirl(options.swirl).value * 0.0012;
+    let swirl = normalizeSwirl(options.swirl);
+    let swirlOffset = swirl.value * 0.0012;
+    let swirlAngle = swirl.value * 0.0022;
+    let swirlScale = 1.0 + swirl.value * 0.004;
+    let rotateRad = 0;
+    let zoom = 1;
+    let travel = 0;
     const animatedPositions = new Float32Array(BLOB_POSITIONS.length);
     const animatedSizes = new Float32Array(BLOB_SIZES.length);
 
     const updateAnimatedGeometry = (time: number) => {
-      const cycle = time * 6.2831853;
+      const cycle = time * TAU;
       for (let layer = 0; layer < BLOB_SIZES.length; layer++) {
         const index = layer * 2;
         animatedPositions[index] =
@@ -369,8 +365,17 @@ export function createWebGLMeshRenderer(
     const render = (now: number) => {
       const elapsed = (now - startTime) / 1000;
       const time = elapsed / motionDuration;
+      const wave = Math.sin(time * TAU);
+      const orbit = Math.cos(time * TAU);
+      const frameAngle = swirlAngle + rotateRad * wave;
+      const frameScale = swirlScale * Math.max(zoom + motionAmount * wave * 0.04, 0.1);
+      const frameTravelX = travel * wave;
+      const frameTravelY = travel * orbit;
       gl.useProgram(program);
-      gl.uniform1f(uniforms.time, time);
+      gl.uniform1f(uniforms.frameRotationSin, Math.sin(frameAngle));
+      gl.uniform1f(uniforms.frameRotationCos, Math.cos(frameAngle));
+      gl.uniform1f(uniforms.frameScale, frameScale);
+      gl.uniform2f(uniforms.frameTravel, frameTravelX, frameTravelY);
       updateAnimatedGeometry(time);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
     };
@@ -382,18 +387,18 @@ export function createWebGLMeshRenderer(
     const setStaticUniforms = () => {
       motion = normalizeMotion(options);
       motionDuration = Math.max(motion.duration, 1);
-      const swirl = normalizeSwirl(options.swirl);
+      swirl = normalizeSwirl(options.swirl);
       motionAmount = motion.enabled ? options.motionIntensity / 100 : 0;
       swirlOffset = swirl.value * 0.0012;
+      swirlAngle = swirl.value * 0.0022;
+      swirlScale = 1.0 + swirl.value * 0.004;
+      rotateRad = (Number(motion.rotate) * Math.PI) / 180;
+      zoom = motion.enabled ? Number(motion.zoom) : 1;
+      travel = Number(motion.travel) / 100;
       const colorValues = options.colors.flatMap(parseHexColor);
       const baseColor = parseHexColor(options.baseColor);
       gl.useProgram(program);
       gl.uniform1f(uniforms.saturation, options.saturation);
-      gl.uniform1f(uniforms.swirl, swirl.value);
-      gl.uniform1f(uniforms.motion, motionAmount);
-      gl.uniform1f(uniforms.zoom, motion.enabled ? Number(motion.zoom) : 1);
-      gl.uniform1f(uniforms.rotate, (Number(motion.rotate) * Math.PI) / 180);
-      gl.uniform1f(uniforms.travel, Number(motion.travel) / 100);
       gl.uniform1f(uniforms.grainOpacity, options.grainOpacity);
       gl.uniform1f(uniforms.grainScale, options.grainScale);
       gl.uniform1f(uniforms.grainContrast, options.grainContrast);
