@@ -1,7 +1,7 @@
+import type { MotionPreset } from "./core.js";
+
 export const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
-
-export type MotionPreset = "none" | "drift" | "breathe" | "orbit";
 
 export const normalizeSwirl = (swirl = 0) => {
   const value = clamp(swirl, 0, 100);

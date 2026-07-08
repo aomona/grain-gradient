@@ -394,7 +394,7 @@ export function createWebGLMeshRenderer(
       swirlScale = 1.0 + swirl.value * 0.004;
       rotateRad = (Number(motion.rotate) * Math.PI) / 180;
       zoom = motion.enabled ? Number(motion.zoom) : 1;
-      travel = Number(motion.travel) / 100;
+      travel = motion.enabled ? Number(motion.travel) / 100 : 0;
       const colorValues = options.colors.flatMap(parseHexColor);
       const baseColor = parseHexColor(options.baseColor);
       gl.useProgram(program);

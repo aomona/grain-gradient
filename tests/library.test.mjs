@@ -133,6 +133,14 @@ test("motion trig is computed on CPU and passed as uniforms", () => {
   assert.ok(source.includes("u_frameTravel"), "frame travel uniform should exist");
 });
 
+test("static renders disable motion travel", () => {
+  const source = readFileSync(new URL("../dist/webgl.js", import.meta.url), "utf8");
+  assert.ok(
+    source.includes("travel = motion.enabled ? Number(motion.travel) / 100 : 0"),
+    "travel should be zero when motion is disabled",
+  );
+});
+
 test("resolves invalid motionPreset to none", () => {
   const options = resolveWebGLMeshGradientOptions({ motionPreset: "invalid" });
   assert.equal(options.motionPreset, "none");
