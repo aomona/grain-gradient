@@ -1,165 +1,161 @@
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
+import type { GrainGradientOptions } from "./core.js";
 import {
-  createAndroidCanvasFallbackStyle,
-  createGrainLayerStyle,
-  createMeshGradient,
-  createTurbulenceNoise,
-  type AndroidCanvasFallback,
-  type CanvasGrainStyle,
-  type GrainGradientCSSOptions,
-} from "./core.js";
-import { createSwirlTransform, normalizeMotion, normalizeSwirl } from "./internal.js";
+  createWebGLMeshRenderer,
+  type WebGLMeshGradientOptions,
+  type WebGLMeshRenderer,
+} from "./webgl.js";
 
-export type { AndroidCanvasFallback } from "./core.js";
-
-export interface GrainGradientReactOptions extends GrainGradientCSSOptions {
-  androidCanvasFallback?: AndroidCanvasFallback;
-  androidCanvasFallbackUserAgent?: string | null;
-}
-
-export interface GrainGradientProps extends GrainGradientReactOptions {
+export interface GrainGradientProps extends GrainGradientOptions, WebGLMeshGradientOptions {
   className?: string;
   style?: CSSProperties;
+  canvasStyle?: CSSProperties;
   children?: ReactNode;
 }
 
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+export { presets } from "./core.js";
+export type { GrainGradientOptions, GrainGradientPreset, GrainGradientPresetName } from "./core.js";
+
 const createGrainGradientOptionKey = (parts: readonly unknown[]) => JSON.stringify(parts);
 
-export function useGrainGradient(options: GrainGradientReactOptions = {}) {
-  const meshKey = createGrainGradientOptionKey([
+export function useGrainGradient(options: GrainGradientOptions & WebGLMeshGradientOptions = {}) {
+  const rootStyle = useMemo(
+    () =>
+      ({
+        position: "relative" as const,
+        overflow: "hidden" as const,
+        backgroundColor: options.baseColor ?? "#0b1020",
+      }) satisfies CSSProperties,
+    [options.baseColor],
+  );
+
+  const canvasStyle = useMemo(
+    () =>
+      ({
+        position: "absolute" as const,
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        pointerEvents: "none" as const,
+      }) satisfies CSSProperties,
+    [],
+  );
+
+  return { rootStyle, canvasStyle };
+}
+
+export const GrainGradient = memo(function GrainGradient(props: GrainGradientProps) {
+  const { children, className, style, canvasStyle, ...options } = props;
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const rendererRef = useRef<WebGLMeshRenderer | null>(null);
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+  const [webglReady, setWebglReady] = useState(false);
+  const { rootStyle, canvasStyle: defaultCanvasStyle } = useGrainGradient(options);
+
+  const webglKey = createGrainGradientOptionKey([
     options.colors,
     options.baseColor,
     options.intensity,
     options.saturation,
-    options.blur,
     options.swirl,
-  ]);
-  const grainKey = createGrainGradientOptionKey([
-    options.seed,
-    options.frequency,
-    options.baseFrequency,
-    options.numOctaves,
-    options.contrast,
-    options.width,
-    options.height,
-    options.size,
-    options.stitchTiles,
-  ]);
-  const motionKey = createGrainGradientOptionKey([
     options.motionPreset,
     options.motionSpeed,
     options.motionIntensity,
+    options.seed,
+    options.frequency,
+    options.baseFrequency,
+    options.contrast,
     options.opacity,
-    options.blur,
-    options.saturation,
-    options.intensity,
-    options.swirl,
+    options.maxPixelRatio,
+    options.motionMaxPixelRatio,
+    options.fps,
+    options.pauseWhenHidden,
   ]);
-  const meshCss = useMemo(() => createMeshGradient(options), [meshKey]);
-  const grainUrl = useMemo(() => createTurbulenceNoise(options), [grainKey]);
-  const svgGrainLayerStyle = useMemo(() => createGrainLayerStyle(options), [grainKey]);
-  const [canvasGrainStyle, setCanvasGrainStyle] = useState<CanvasGrainStyle | null>(null);
 
   useEffect(() => {
-    setCanvasGrainStyle(createAndroidCanvasFallbackStyle(options));
-  }, [grainKey, options.androidCanvasFallback, options.androidCanvasFallbackUserAgent]);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-  const usesCanvasFallback = Boolean(canvasGrainStyle);
-  const activeGrainUrl = canvasGrainStyle?.backgroundImage ?? grainUrl;
-  const cssText = useMemo(() => `background-image: ${meshCss};`, [meshCss]);
-  const motion = useMemo(() => normalizeMotion(options), [motionKey]);
-  const swirl = useMemo(() => normalizeSwirl(options.swirl), [options.swirl]);
-  const swirlTransform = createSwirlTransform(swirl);
-  const meshStyle = useMemo(
-    () =>
-      ({
-        backgroundColor: options.baseColor ?? "#0b1020",
-        backgroundImage: meshCss,
-        backgroundSize: swirl.enabled
-          ? `${swirl.backgroundSizeX}% ${swirl.backgroundSizeY}%`
-          : "100% 100%",
-        backgroundPosition: swirl.enabled
-          ? `${swirl.backgroundPositionX}% ${swirl.backgroundPositionY}%`
-          : undefined,
-        backgroundRepeat: "no-repeat",
-        filter: `blur(${clamp(options.blur ?? 42, 0, 80)}px) saturate(${clamp(options.saturation ?? options.intensity ?? 1.18, 0.2, 2.5)})`,
-        transform: `scale(1.12)${swirlTransform}`,
-        animation: motion.enabled
-          ? `grain-gradient-react-mesh-${motion.preset} ${motion.duration}s ease-in-out infinite alternate`
-          : undefined,
-        willChange: motion.enabled ? "transform" : undefined,
-        "--gg-travel": `${motion.travel}%`,
-        "--gg-zoom": `${motion.zoom}`,
-        "--gg-rotate": `${motion.rotate}deg`,
-        "--gg-swirl-x": `${swirl.offsetX}%`,
-        "--gg-swirl-y": `${swirl.offsetY}%`,
-        "--gg-swirl-scale": `${swirl.scale}`,
-        "--gg-swirl-rotate": `${swirl.rotate}deg`,
-      }) as CSSProperties,
-    [
-      meshCss,
-      motion,
-      options.baseColor,
-      options.blur,
-      options.intensity,
-      options.saturation,
-      swirl,
-      swirlTransform,
-    ],
-  );
-  const grainStyle = useMemo(
-    () =>
-      ({
-        backgroundImage: activeGrainUrl,
-        backgroundSize: canvasGrainStyle?.backgroundSize ?? svgGrainLayerStyle.backgroundSize,
-        backgroundRepeat: canvasGrainStyle?.backgroundRepeat ?? svgGrainLayerStyle.backgroundRepeat,
-        imageRendering: canvasGrainStyle?.imageRendering ?? "auto",
-        opacity: options.opacity ?? 0.2,
-        mixBlendMode: (options.blendMode ?? "overlay") as CSSProperties["mixBlendMode"],
-        pointerEvents: "none" as const,
-        contain: "paint",
-      }) as CSSProperties,
-    [
-      activeGrainUrl,
-      usesCanvasFallback,
-      canvasGrainStyle,
-      svgGrainLayerStyle,
-      options.opacity,
-      options.blendMode,
-      options.frequency,
-      options.baseFrequency,
-    ],
-  );
-  const motionCss = useMemo(() => {
-    if (!motion.enabled) return "";
-    return `@keyframes grain-gradient-react-mesh-drift { 0% { transform: scale(1.12) scale(var(--gg-swirl-scale)) rotate(var(--gg-swirl-rotate)) translate3d(calc(var(--gg-travel) * -1), calc(var(--gg-travel) * -1), 0); } 100% { transform: scale(var(--gg-zoom)) scale(var(--gg-swirl-scale)) rotate(var(--gg-swirl-rotate)) translate3d(var(--gg-travel), var(--gg-travel), 0); } } @keyframes grain-gradient-react-mesh-breathe { 0% { transform: scale(1.12) scale(var(--gg-swirl-scale)) rotate(var(--gg-swirl-rotate)); } 100% { transform: scale(var(--gg-zoom)) scale(var(--gg-swirl-scale)) rotate(var(--gg-swirl-rotate)); } } @keyframes grain-gradient-react-mesh-orbit { 0% { transform: scale(1.12) scale(var(--gg-swirl-scale)) rotate(var(--gg-swirl-rotate)) rotate(calc(var(--gg-rotate) * -1)) translate3d(calc(var(--gg-travel) * -1), var(--gg-travel), 0); } 100% { transform: scale(var(--gg-zoom)) scale(var(--gg-swirl-scale)) rotate(var(--gg-swirl-rotate)) rotate(var(--gg-rotate)) translate3d(var(--gg-travel), calc(var(--gg-travel) * -1), 0); } } @media (prefers-reduced-motion: reduce) { [data-grain-gradient-motion] { animation: none !important; } }`;
-  }, [motion.enabled]);
-  const rootStyle = useMemo(
-    () => ({ position: "relative" as const, overflow: "hidden" as const }),
-    [],
-  );
-  return { meshStyle, grainStyle, rootStyle, cssText, motionCss };
-}
+    let activeRenderer: WebGLMeshRenderer | null = null;
+    let resizeObserver: ResizeObserver | null = null;
 
-export const GrainGradient = memo(function GrainGradient(props: GrainGradientProps) {
-  const { children, className, style, ...options } = props;
-  const { meshStyle, grainStyle, rootStyle, motionCss } = useGrainGradient(options);
+    const stopAndDestroy = () => {
+      activeRenderer?.destroy();
+      activeRenderer = null;
+      rendererRef.current = null;
+    };
+
+    const handleResize = () => activeRenderer?.resize();
+
+    const createRenderer = () => {
+      stopAndDestroy();
+      const renderer = createWebGLMeshRenderer(canvas, optionsRef.current);
+      if (!renderer) {
+        setWebglReady(false);
+        return;
+      }
+      activeRenderer = renderer;
+      rendererRef.current = renderer;
+      renderer.resize();
+      renderer.start();
+      setWebglReady(true);
+    };
+
+    const handleContextLost = (event: Event) => {
+      event.preventDefault();
+      stopAndDestroy();
+      setWebglReady(false);
+    };
+
+    const handleContextRestored = (event: Event) => {
+      event.preventDefault();
+      createRenderer();
+    };
+
+    resizeObserver =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(handleResize);
+    resizeObserver?.observe(canvas);
+    if (!resizeObserver) window.addEventListener("resize", handleResize);
+    canvas.addEventListener("webglcontextlost", handleContextLost);
+    canvas.addEventListener("webglcontextrestored", handleContextRestored);
+
+    createRenderer();
+
+    return () => {
+      canvas.removeEventListener("webglcontextlost", handleContextLost);
+      canvas.removeEventListener("webglcontextrestored", handleContextRestored);
+      resizeObserver?.disconnect();
+      if (!resizeObserver) window.removeEventListener("resize", handleResize);
+      stopAndDestroy();
+      setWebglReady(false);
+    };
+  }, []);
+
+  useEffect(() => {
+    rendererRef.current?.update(options);
+  }, [webglKey]);
+
   return (
     <div className={className} style={{ ...rootStyle, ...style }}>
-      {motionCss ? <style dangerouslySetInnerHTML={{ __html: motionCss }} /> : null}
-      <div
+      <canvas
+        ref={canvasRef}
         aria-hidden
-        data-grain-gradient-motion
-        style={{ ...meshStyle, position: "absolute", inset: "-18%", zIndex: 0 }}
-      />
-      <div
-        aria-hidden
-        data-grain-gradient-motion
-        style={{ ...grainStyle, position: "absolute", inset: "-8%", zIndex: 1 }}
+        style={{
+          ...defaultCanvasStyle,
+          opacity: webglReady ? 1 : 0,
+          ...canvasStyle,
+        }}
       />
       {children ?? null}
     </div>
   );
 });
+
+export type { WebGLMeshGradientOptions, WebGLMeshRenderer } from "./webgl.js";
+export {
+  createWebGLMeshRenderer,
+  isWebGLAvailable,
+  resolveWebGLMeshGradientOptions,
+} from "./webgl.js";

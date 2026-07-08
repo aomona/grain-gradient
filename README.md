@@ -1,10 +1,12 @@
 # grain-gradient
 
-Lightweight TypeScript helpers for mesh + grain gradients.
+Lightweight TypeScript helpers for WebGL shader mesh + grain gradients.
+
+> **v2 is WebGL-only.** The library now renders through a single WebGL fragment shader. CSS/SVG gradient generation APIs from v1 (`createGrainGradientCSS`, `createMeshGradient`, `createTurbulenceNoise`, `createAndroidCanvasFallbackStyle`, and related Android/canvas fallback helpers) have been removed.
 
 ![grain-gradient playground preview](https://raw.githubusercontent.com/aomona/grain-gradient/main/grain-gradient-og.png)
 
-[Open the playground](https://aomona.github.io/grain-gradient/playground/)
+[Open the playground](https://aomona.github.io/grain-gradient/)
 
 ## Installation
 
@@ -12,120 +14,79 @@ Lightweight TypeScript helpers for mesh + grain gradients.
 npm i grain-gradient
 ```
 
-## Core CSS
+## WebGL shader renderer
 
-```ts
-import { createGrainGradientCSS, presets } from "grain-gradient";
-
-const css = createGrainGradientCSS({
-  ...presets["Aurora Citrus"],
-  motionPreset: "drift",
-  motionSpeed: 38,
-  motionIntensity: 46,
-  swirl: 30,
-});
-```
-
-`grain-gradient` has no runtime dependencies. The core entry does not import React.
-
-The core API, playground, and React helper can switch to a Canvas-generated PNG grain fallback for Android Chrome device testing. The fallback helpers are SSR-safe: SVG grain is rendered first, then Canvas grain can be applied after hydration when Android Chrome is detected.
-
-```ts
-import { createAndroidCanvasFallbackStyle } from "grain-gradient";
-
-const fallback = createAndroidCanvasFallbackStyle({ androidCanvasFallback: "auto" });
-if (fallback) Object.assign(grainLayer.style, fallback);
-```
-
-`auto` is resolved where the helper runs. If you are exporting static CSS on a non-Android browser and want the Canvas fallback included, use `androidCanvasFallback: "on"` for that export.
-
-For CSS generated with `createGrainGradientCSS()`, apply those values to the generated `::after` grain layer as a CSS override.
-
-See [API reference](./docs/API.md) for all core functions, React helpers, options, and presets.
-
-## React
+`grain-gradient` renders both the mesh gradient and the grain texture in one WebGL fragment shader. The React component keeps only a minimal `baseColor` background behind the canvas, so SSR and unsupported WebGL environments do not render a blank transparent box.
 
 ```tsx
-import { GrainGradient } from "grain-gradient/react";
+import { GrainGradient, presets } from "grain-gradient/react";
 
 export function Hero() {
   return (
     <GrainGradient
-      colors={["#c2e812", "#ff7f11", "#ee4266", "#2a1e5c"]}
+      {...presets["Aurora Citrus"]}
       motionPreset="drift"
       motionSpeed={38}
       motionIntensity={46}
       swirl={30}
-      androidCanvasFallback="auto"
+      opacity={0.22}
       style={{ minHeight: "100vh" }}
     />
   );
 }
 ```
 
-For SSR frameworks, pass the request user agent as a hint so `auto` can use the same Android Chrome detection after hydration:
+The component creates a `<canvas>` context on the client. If WebGL is unavailable or the WebGL context is lost, the component keeps only the `baseColor` background; it does not provide a CSS/SVG or 2D canvas fallback.
 
-```tsx
-import { headers } from "next/headers";
-import { GrainGradient } from "grain-gradient/react";
-
-export default async function Page() {
-  const userAgent = (await headers()).get("user-agent");
-
-  return <GrainGradient androidCanvasFallback="auto" androidCanvasFallbackUserAgent={userAgent} />;
-}
-```
-
-React is a peer dependency via the `grain-gradient/react` subpath.
-
-## WebGL experimental
-
-For continuously animated mesh backgrounds, use the optional WebGL renderer. The default CSS/SVG renderer remains the SSR-safe fallback.
-
-The WebGL React component is client-only because it creates a `<canvas>` context. In SSR frameworks such as Next.js, render it from a client boundary (`"use client"`) or a dynamic import with `ssr: false`, and keep CSS/SVG available as the fallback for server output, static exports, unsupported browsers, and lost WebGL contexts.
-
-```tsx
-import { WebGLGrainGradient } from "grain-gradient/webgl/react";
-
-export function AnimatedHero() {
-  return (
-    <WebGLGrainGradient
-      colors={["#c2e812", "#ff7f11", "#ee4266", "#2a1e5c"]}
-      motionPreset="drift"
-      motionSpeed={38}
-      motionIntensity={46}
-      // Caps static canvas pixel density for high-DPI performance.
-      maxPixelRatio={1.25}
-      // Motion defaults are already lightweight: fps=30, motionMaxPixelRatio=0.75.
-      style={{ minHeight: "100vh" }}
-    />
-  );
-}
-```
+In SSR frameworks such as Next.js, render it from a client boundary (`"use client"`) or with a dynamic import using `ssr: false`.
 
 ```tsx
 import dynamic from "next/dynamic";
 
-const WebGLGrainGradient = dynamic(
-  () => import("grain-gradient/webgl/react").then((mod) => mod.WebGLGrainGradient),
+const GrainGradient = dynamic(
+  () => import("grain-gradient/react").then((mod) => mod.GrainGradient),
   { ssr: false },
 );
 ```
 
-Use CSS/SVG for static backgrounds and exports; use WebGL as the default choice when smooth continuous mesh animation matters. WebGL renders once and stops when motion is disabled. When motion is enabled, the defaults are tuned for full-screen performance: `fps: 30` and `motionMaxPixelRatio: 0.75`. Raise them only when you need smoother motion or sharper animated rendering. `maxPixelRatio` can stay a little higher for static sharpness.
+## Framework-agnostic renderer
 
-```tsx
-// Explicit lightweight animated fullscreen preset, matching the defaults
-<WebGLGrainGradient motionPreset="drift" motionSpeed={35} fps={30} motionMaxPixelRatio={0.75} />
+```ts
+import { createWebGLMeshRenderer } from "grain-gradient";
+
+const canvas = document.querySelector("canvas")!;
+const renderer = createWebGLMeshRenderer(canvas, {
+  colors: ["#c2e812", "#ff7f11", "#ee4266", "#2a1e5c"],
+  motionPreset: "drift",
+  motionSpeed: 38,
+  motionIntensity: 46,
+  opacity: 0.22,
+});
+
+renderer?.start();
 ```
+
+Call `renderer.update(options)` when controls change, `renderer.resize()` when the canvas layout changes, and `renderer.destroy()` during cleanup.
+
+## Performance defaults
+
+Animated fullscreen rendering is tuned conservatively by default:
+
+- `fps: 30`
+- `maxPixelRatio: 1.25`
+- `motionMaxPixelRatio: 0.75`
+- `pauseWhenHidden: true`
+
+Raise these only when you need sharper or smoother animated rendering.
 
 ## Development
 
 - `npm run build`: compile the TypeScript source to `dist/`
+- `npm run build:playground`: build the Vite React playground to `dist-playground/`
 - `npm run test`: run the Node test suite after building
 - `npm run lint`: check the codebase with oxlint
 - `npm run format:check`: verify formatting with oxfmt
-- `npm run playground`: open the Vite playground at `/playground/`
+- `npm run playground`: open the Vite playground at `/`
 
 ## Local playground
 
@@ -135,6 +96,4 @@ Run the Vite-powered playground with hot reload:
 npm run dev
 ```
 
-Then open `http://localhost:5173/playground/` to tune presets, colors, and grain settings live.
-
-Use `npm run playground` to start Vite and open the playground automatically.
+Then open `http://localhost:5173/`.

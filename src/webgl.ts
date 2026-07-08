@@ -1,7 +1,7 @@
-import type { MeshGradientOptions, MotionOptions } from "./core.js";
-import { clamp, normalizeMotion, normalizeSwirl } from "./internal.js";
+import type { GrainOptions, MeshGradientOptions, MotionOptions } from "./core.js";
+import { clamp, motionPresets, normalizeMotion, normalizeSwirl } from "./internal.js";
 
-export interface WebGLMeshGradientOptions extends MeshGradientOptions, MotionOptions {
+export interface WebGLMeshGradientOptions extends MeshGradientOptions, MotionOptions, GrainOptions {
   maxPixelRatio?: number;
   motionMaxPixelRatio?: number;
   fps?: number;
@@ -17,6 +17,10 @@ export interface ResolvedWebGLMeshGradientOptions {
   motionPreset: MotionOptions["motionPreset"];
   motionSpeed: number;
   motionIntensity: number;
+  grainOpacity: number;
+  grainScale: number;
+  grainContrast: number;
+  grainSeed: number;
   maxPixelRatio: number;
   motionMaxPixelRatio: number;
   fps: number;
@@ -35,6 +39,14 @@ export interface WebGLMeshRenderer {
 const DEFAULT_COLORS = ["#7c3aed", "#06b6d4", "#f97316", "#f43f5e"];
 const BLOB_POSITIONS = [0.12, 0.18, 0.86, 0.16, 0.7, 0.82, 0.2, 0.88, 0.5, 0.46, 0.18, 0.56];
 const BLOB_SIZES = [0.34, 0.32, 0.36, 0.32, 0.3, 0.28];
+
+const normalizeGrainSeed = (seed: number): number => {
+  const n = Math.floor(clamp(seed, 0, 9999));
+  // Deterministic integer hash mapped to [0, 1). The fragment shader uses
+  // mediump floats, so the seed must stay small to avoid destroying
+  // fractional precision in the hash arithmetic.
+  return ((n * 9301 + 49297) % 233280) / 233280;
+};
 
 const vertexShaderSource = `
 attribute vec2 a_position;
@@ -59,6 +71,10 @@ uniform float u_motion;
 uniform float u_zoom;
 uniform float u_rotate;
 uniform float u_travel;
+uniform float u_grainOpacity;
+uniform float u_grainScale;
+uniform float u_grainContrast;
+uniform float u_grainSeed;
 uniform vec3 u_baseColor;
 uniform vec3 u_colors[6];
 uniform int u_colorCount;
@@ -76,12 +92,32 @@ vec2 rotate2d(vec2 value, float angle) {
   return mat2(c, -s, s, c) * value;
 }
 
+float hash(vec2 point) {
+  vec3 value = fract(vec3(point.xyx) * 0.1031);
+  value += dot(value, value.yzx + 33.33 + u_grainSeed);
+  return fract((value.x + value.y) * value.z);
+}
+
+float grain(vec2 point) {
+  vec2 cell = floor(point * u_grainScale);
+  float noise = hash(cell) * 2.0 - 1.0;
+  return clamp(noise * u_grainContrast, -1.0, 1.0);
+}
+
+vec3 overlayBlend(vec3 base, vec3 blend) {
+  vec3 low = 2.0 * base * blend;
+  vec3 high = 1.0 - 2.0 * (1.0 - base) * (1.0 - blend);
+  return mix(low, high, step(vec3(0.5), base));
+}
+
 void main() {
   vec2 aspect = vec2(u_resolution.x / max(u_resolution.y, 1.0), 1.0);
   vec2 uv = v_uv;
   vec2 centered = uv - 0.5;
   float wave = sin(u_time * 6.2831853);
   float orbit = cos(u_time * 6.2831853);
+  centered = rotate2d(centered, u_swirl * 0.0022);
+  centered /= 1.0 + u_swirl * 0.004;
   centered = rotate2d(centered, u_rotate * wave);
   centered /= max(u_zoom + u_motion * wave * 0.04, 0.1);
   uv = centered + 0.5 + vec2(u_travel * wave, u_travel * orbit);
@@ -104,6 +140,7 @@ void main() {
   } else {
     color = u_colors[5];
   }
+  color = mix(u_baseColor, color, 0.86);
 
   for (int layer = 5; layer >= 0; layer--) {
     if (layer >= u_colorCount) {
@@ -126,7 +163,13 @@ void main() {
     color = mix(color, u_colors[layer], blob * opacity);
   }
 
-  gl_FragColor = vec4(saturateColor(color, u_saturation), 1.0);
+  color = saturateColor(color, u_saturation);
+
+  float noise = grain(gl_FragCoord.xy / max(min(u_resolution.x, u_resolution.y), 1.0));
+  vec3 grainColor = vec3(0.5 + noise * 0.5);
+  color = mix(color, overlayBlend(color, grainColor), u_grainOpacity);
+
+  gl_FragColor = vec4(color, 1.0);
 }
 `;
 
@@ -180,9 +223,15 @@ export function resolveWebGLMeshGradientOptions(
     baseColor: options.baseColor ?? "#0b1020",
     saturation: clamp(options.saturation ?? options.intensity ?? 1.18, 0.2, 2.5),
     swirl: clamp(options.swirl ?? 0, 0, 100),
-    motionPreset: options.motionPreset ?? "none",
+    motionPreset: motionPresets.has(options.motionPreset ?? "none")
+      ? (options.motionPreset ?? "none")
+      : "none",
     motionSpeed: clamp(options.motionSpeed ?? 0, 0, 100),
     motionIntensity: clamp(options.motionIntensity ?? 50, 0, 100),
+    grainOpacity: clamp(options.opacity ?? 0.2, 0, 1),
+    grainScale: clamp(options.frequency ?? options.baseFrequency ?? 1.25, 0.04, 2.4) * 520,
+    grainContrast: clamp(options.contrast ?? 1.7, 1, 2.5),
+    grainSeed: normalizeGrainSeed(options.seed ?? 1),
     maxPixelRatio: clamp(options.maxPixelRatio ?? 1.25, 0.5, 3),
     motionMaxPixelRatio: clamp(
       options.motionMaxPixelRatio ?? Math.min(options.maxPixelRatio ?? 1.25, 0.75),
@@ -270,6 +319,10 @@ export function createWebGLMeshRenderer(
       zoom: gl.getUniformLocation(program, "u_zoom"),
       rotate: gl.getUniformLocation(program, "u_rotate"),
       travel: gl.getUniformLocation(program, "u_travel"),
+      grainOpacity: gl.getUniformLocation(program, "u_grainOpacity"),
+      grainScale: gl.getUniformLocation(program, "u_grainScale"),
+      grainContrast: gl.getUniformLocation(program, "u_grainContrast"),
+      grainSeed: gl.getUniformLocation(program, "u_grainSeed"),
       baseColor: gl.getUniformLocation(program, "u_baseColor"),
       colors: gl.getUniformLocation(program, "u_colors"),
       colorCount: gl.getUniformLocation(program, "u_colorCount"),
@@ -341,6 +394,10 @@ export function createWebGLMeshRenderer(
       gl.uniform1f(uniforms.zoom, motion.enabled ? Number(motion.zoom) : 1);
       gl.uniform1f(uniforms.rotate, (Number(motion.rotate) * Math.PI) / 180);
       gl.uniform1f(uniforms.travel, Number(motion.travel) / 100);
+      gl.uniform1f(uniforms.grainOpacity, options.grainOpacity);
+      gl.uniform1f(uniforms.grainScale, options.grainScale);
+      gl.uniform1f(uniforms.grainContrast, options.grainContrast);
+      gl.uniform1f(uniforms.grainSeed, options.grainSeed);
       gl.uniform3fv(uniforms.baseColor, baseColor);
       gl.uniform3fv(uniforms.colors, colorValues);
       gl.uniform1i(uniforms.colorCount, options.colorCount);

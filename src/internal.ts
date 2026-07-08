@@ -5,23 +5,8 @@ export type MotionPreset = "none" | "drift" | "breathe" | "orbit";
 
 export const normalizeSwirl = (swirl = 0) => {
   const value = clamp(swirl, 0, 100);
-  const shift = value / 100;
-  return {
-    value,
-    enabled: value > 0,
-    scale: (1 + value * 0.004).toFixed(3),
-    rotate: (value * 0.12).toFixed(2),
-    offsetX: shift * 12,
-    offsetY: shift * -10,
-    backgroundSizeX: (100 + value * 0.55).toFixed(1),
-    backgroundSizeY: (100 + value * 0.4).toFixed(1),
-    backgroundPositionX: (50 + shift * 12).toFixed(1),
-    backgroundPositionY: (50 - shift * 10).toFixed(1),
-  };
+  return { value, enabled: value > 0 };
 };
-
-export const createSwirlTransform = (swirl: ReturnType<typeof normalizeSwirl>) =>
-  swirl.enabled ? ` scale(${swirl.scale}) rotate(${swirl.rotate}deg)` : "";
 
 export const motionPresets = new Set<MotionPreset>(["none", "drift", "breathe", "orbit"]);
 
@@ -42,7 +27,6 @@ export const normalizeMotion = (
   const travel = (4 + intensity * 0.16).toFixed(1);
   const zoom = (1.12 + intensity * 0.0018).toFixed(3);
   const rotate = (intensity * 0.12).toFixed(1);
-  const grainShift = (2 + intensity * 0.08).toFixed(1);
 
   return {
     preset,
@@ -51,6 +35,5 @@ export const normalizeMotion = (
     travel,
     zoom,
     rotate,
-    grainShift,
   };
 };

@@ -1,13 +1,14 @@
 {
   "name": "grain-gradient",
-  "version": "1.2.0",
-  "description": "Lightweight TypeScript utilities for mesh and grain gradients.",
+  "version": "2.0.0",
+  "description": "Lightweight WebGL shader utilities for mesh and grain gradients.",
   "keywords": [
     "background",
     "gradient",
     "grain",
     "react",
-    "svg"
+    "shader",
+    "webgl"
   ],
   "homepage": "https://github.com/aomona/grain-gradient#readme",
   "bugs": {
@@ -46,19 +47,23 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "vite",
+    "build:playground": "vite build",
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p playground/tsconfig.json",
     "pretest": "npm run build",
     "test": "node --test tests/*.test.mjs",
-    "playground": "vite --open /playground/"
+    "playground": "vite --open"
   },
   "devDependencies": {
-    "@types/react": "^18.3.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
     "oxfmt": "^0.51.0",
     "oxlint": "^1.66.0",
+    "react-dom": "^19.2.7",
     "typescript": "^5.5.4",
     "vite": "^8.0.14"
   },
