@@ -109,6 +109,30 @@ test("grain coordinates use scalar resolution normalization", () => {
   );
 });
 
+test("motion trig is computed on CPU and passed as uniforms", () => {
+  const source = readFileSync(new URL("../dist/webgl.js", import.meta.url), "utf8");
+  assert.ok(
+    !source.includes("sin(u_time"),
+    "fragment shader should not call sin(u_time) per pixel",
+  );
+  assert.ok(
+    !source.includes("cos(u_time"),
+    "fragment shader should not call cos(u_time) per pixel",
+  );
+  assert.ok(
+    !source.includes("float s = sin("),
+    "fragment shader should not compute sin per pixel in rotate2d",
+  );
+  assert.ok(
+    !source.includes("float c = cos("),
+    "fragment shader should not compute cos per pixel in rotate2d",
+  );
+  assert.ok(source.includes("u_frameRotationSin"), "frame rotation sin uniform should exist");
+  assert.ok(source.includes("u_frameRotationCos"), "frame rotation cos uniform should exist");
+  assert.ok(source.includes("u_frameScale"), "frame scale uniform should exist");
+  assert.ok(source.includes("u_frameTravel"), "frame travel uniform should exist");
+});
+
 test("resolves invalid motionPreset to none", () => {
   const options = resolveWebGLMeshGradientOptions({ motionPreset: "invalid" });
   assert.equal(options.motionPreset, "none");
