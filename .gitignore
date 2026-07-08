@@ -1,3 +1,5 @@
 node_modules
 dist
+dist-playground
 .DS_Store
+.slim/deepwork/

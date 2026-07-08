@@ -24,42 +24,17 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version: 20
+          node-version: 20.19.0
           cache: npm
       - run: npm ci
       - run: npm run build
+      - run: npm run build:playground
       - name: Build static playground artifact
         run: |
           mkdir -p _site
-          cp -R playground dist _site/
+          cp -R dist-playground/* _site/
           cp grain-gradient-og.png _site/screenshot.png
           touch _site/.nojekyll
-          cat > _site/index.html <<'HTML'
-          <!doctype html>
-          <html lang="en">
-            <head>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1">
-              <meta http-equiv="refresh" content="0; url=./playground/">
-              <title>grain-gradient playground</title>
-              <meta name="description" content="Tune lightweight mesh gradients with SVG turbulence grain.">
-              <meta property="og:type" content="website">
-              <meta property="og:site_name" content="grain-gradient">
-              <meta property="og:title" content="grain-gradient playground">
-              <meta property="og:description" content="Tune lightweight mesh gradients with SVG turbulence grain.">
-              <meta property="og:url" content="https://aomona.github.io/grain-gradient/">
-              <meta property="og:image" content="https://aomona.github.io/grain-gradient/screenshot.png">
-              <meta property="og:image:alt" content="grain-gradient playground showing a grainy mesh gradient preview and controls.">
-              <meta name="twitter:card" content="summary_large_image">
-              <meta name="twitter:title" content="grain-gradient playground">
-              <meta name="twitter:description" content="Tune lightweight mesh gradients with SVG turbulence grain.">
-              <meta name="twitter:image" content="https://aomona.github.io/grain-gradient/screenshot.png">
-            </head>
-            <body>
-              <a href="./playground/">Open playground</a>
-            </body>
-          </html>
-          HTML
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa
         with:
