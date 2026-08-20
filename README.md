@@ -14,12 +14,20 @@ Lightweight TypeScript helpers for WebGL shader mesh + grain gradients.
 npm i grain-gradient
 ```
 
+The React adapter is optional. Install React 18 or newer in the consuming app before importing
+`grain-gradient/react`:
+
+```bash
+npm i react@">=18"
+```
+
 ## WebGL shader renderer
 
 `grain-gradient` renders both the mesh gradient and the grain texture in one WebGL fragment shader. The React component keeps only a minimal `baseColor` background behind the canvas, so SSR and unsupported WebGL environments do not render a blank transparent box.
 
 ```tsx
-import { GrainGradient, presets } from "grain-gradient/react";
+import { presets } from "grain-gradient/core";
+import { GrainGradient } from "grain-gradient/react";
 
 export function Hero() {
   return (
@@ -34,6 +42,12 @@ export function Hero() {
     />
   );
 }
+```
+
+Import presets and option types from `grain-gradient/core` when you do not need the renderer. This entry does not load WebGL or React code.
+
+```ts
+import { presets, type GrainGradientOptions } from "grain-gradient/core";
 ```
 
 The component creates a `<canvas>` context on the client. If WebGL is unavailable or the WebGL context is lost, the component keeps only the `baseColor` background; it does not provide a CSS/SVG or 2D canvas fallback.
