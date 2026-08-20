@@ -325,6 +325,7 @@ export function createWebGLMeshRenderer(
     let animationFrame = 0;
     let running = false;
     let lastFrame = 0;
+    let pixelRatio = 0;
     let startTime = performance.now();
     let motion = normalizeMotion(options);
     let motionDuration = Math.max(motion.duration, 1);
@@ -423,6 +424,11 @@ export function createWebGLMeshRenderer(
       render(now);
     };
 
+    const resolvePixelRatio = () => {
+      const pixelRatioLimit = motion.enabled ? options.motionMaxPixelRatio : options.maxPixelRatio;
+      return Math.min(window.devicePixelRatio || 1, pixelRatioLimit);
+    };
+
     const renderer: WebGLMeshRenderer = {
       canvas,
       update(nextOptions) {
@@ -430,7 +436,8 @@ export function createWebGLMeshRenderer(
         rawOptions = { ...rawOptions, ...nextOptions };
         options = resolveWebGLMeshGradientOptions(rawOptions);
         setStaticUniforms();
-        renderer.resize();
+        const needsResize = pixelRatio !== resolvePixelRatio();
+        if (needsResize) renderer.resize();
         if (!running) return;
         if (motion.enabled) {
           if (!wasMotionEnabled || !animationFrame) {
@@ -440,7 +447,7 @@ export function createWebGLMeshRenderer(
           requestLoop();
         } else {
           cancelLoop();
-          render(performance.now());
+          if (!needsResize) render(performance.now());
         }
       },
       start() {
@@ -457,10 +464,7 @@ export function createWebGLMeshRenderer(
       },
       resize() {
         const rect = canvas.getBoundingClientRect();
-        const pixelRatioLimit = motion.enabled
-          ? options.motionMaxPixelRatio
-          : options.maxPixelRatio;
-        const pixelRatio = Math.min(window.devicePixelRatio || 1, pixelRatioLimit);
+        pixelRatio = resolvePixelRatio();
         const width = Math.max(1, Math.round(rect.width * pixelRatio));
         const height = Math.max(1, Math.round(rect.height * pixelRatio));
         if (canvas.width !== width || canvas.height !== height) {
