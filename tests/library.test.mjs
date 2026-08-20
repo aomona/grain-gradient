@@ -133,6 +133,15 @@ test("motion trig is computed on CPU and passed as uniforms", () => {
   assert.ok(source.includes("u_frameTravel"), "frame travel uniform should exist");
 });
 
+test("requests an opaque WebGL drawing buffer", () => {
+  const source = readFileSync(new URL("../dist/webgl.js", import.meta.url), "utf8");
+  assert.ok(source.includes("alpha: false"), "the drawing buffer should omit its alpha channel");
+  assert.ok(
+    !source.includes("alpha: true"),
+    "the opaque shader should not request an alpha channel",
+  );
+});
+
 test("static renders disable motion travel", () => {
   const source = readFileSync(new URL("../dist/webgl.js", import.meta.url), "utf8");
   assert.ok(

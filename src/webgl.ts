@@ -279,13 +279,13 @@ export function createWebGLMeshRenderer(
 ): WebGLMeshRenderer | null {
   try {
     const gl = (canvas.getContext("webgl", {
-      alpha: true,
+      alpha: false,
       antialias: false,
       depth: false,
       stencil: false,
     }) ||
       canvas.getContext("experimental-webgl", {
-        alpha: true,
+        alpha: false,
         antialias: false,
         depth: false,
         stencil: false,
