@@ -7,6 +7,9 @@ import * as core from "grain-gradient/core";
 import { isWebGLAvailable, resolveWebGLMeshGradientOptions } from "../dist/webgl.js";
 
 const { presets } = api;
+const packageMetadata = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+);
 
 test("exports presets", () => {
   assert.equal(Object.keys(presets).length, 5);
@@ -18,6 +21,10 @@ test("core entry exports presets without the WebGL renderer", () => {
   assert.equal(core.presets, presets);
   assert.equal(core.createWebGLMeshRenderer, undefined);
   assert.deepEqual(Object.keys(core), ["presets"]);
+});
+
+test("package modules are declared side-effect free", () => {
+  assert.equal(packageMetadata.sideEffects, false);
 });
 
 test("main entry exports the WebGL shader API", () => {
