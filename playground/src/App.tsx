@@ -3,8 +3,8 @@ import type { MotionPreset } from "../../src/core.js";
 import { presets } from "../../src/core.js";
 import {
   createWebGLMeshRenderer,
+  type ReplaceableWebGLMeshRenderer,
   type WebGLMeshGradientOptions,
-  type WebGLMeshRenderer,
 } from "../../src/webgl.js";
 
 type PresetName = keyof typeof presets;
@@ -72,7 +72,7 @@ export function App() {
   const [ready, setReady] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const rendererRef = useRef<WebGLMeshRenderer | null>(null);
+  const rendererRef = useRef<ReplaceableWebGLMeshRenderer | null>(null);
   const rendererOptionsRef = useRef<WebGLMeshGradientOptions>({});
   const appliedRendererOptionsRef = useRef<WebGLMeshGradientOptions | null>(null);
 
@@ -104,7 +104,7 @@ export function App() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    let activeRenderer: WebGLMeshRenderer | null = null;
+    let activeRenderer: ReplaceableWebGLMeshRenderer | null = null;
     let resizeObserver: ResizeObserver | null = null;
 
     const stopAndDestroy = () => {

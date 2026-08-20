@@ -3,8 +3,8 @@ import type { CSSProperties, ReactNode } from "react";
 import type { GrainGradientOptions } from "./core.js";
 import {
   createWebGLMeshRenderer,
+  type ReplaceableWebGLMeshRenderer,
   type WebGLMeshGradientOptions,
-  type WebGLMeshRenderer,
 } from "./webgl.js";
 
 export interface GrainGradientProps extends GrainGradientOptions, WebGLMeshGradientOptions {
@@ -48,7 +48,7 @@ export function useGrainGradient(options: GrainGradientOptions & WebGLMeshGradie
 export const GrainGradient = memo(function GrainGradient(props: GrainGradientProps) {
   const { children, className, style, canvasStyle, ...options } = props;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const rendererRef = useRef<WebGLMeshRenderer | null>(null);
+  const rendererRef = useRef<ReplaceableWebGLMeshRenderer | null>(null);
   const appliedWebglKeyRef = useRef<string | null>(null);
   const optionsRef = useRef(options);
   optionsRef.current = options;
@@ -81,7 +81,7 @@ export const GrainGradient = memo(function GrainGradient(props: GrainGradientPro
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    let activeRenderer: WebGLMeshRenderer | null = null;
+    let activeRenderer: ReplaceableWebGLMeshRenderer | null = null;
     let resizeObserver: ResizeObserver | null = null;
 
     const stopAndDestroy = () => {
@@ -160,7 +160,11 @@ export const GrainGradient = memo(function GrainGradient(props: GrainGradientPro
   );
 });
 
-export type { WebGLMeshGradientOptions, WebGLMeshRenderer } from "./webgl.js";
+export type {
+  ReplaceableWebGLMeshRenderer,
+  WebGLMeshGradientOptions,
+  WebGLMeshRenderer,
+} from "./webgl.js";
 export {
   createWebGLMeshRenderer,
   isWebGLAvailable,

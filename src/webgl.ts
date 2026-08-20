@@ -30,11 +30,14 @@ export interface ResolvedWebGLMeshGradientOptions {
 export interface WebGLMeshRenderer {
   readonly canvas: HTMLCanvasElement;
   update(options: WebGLMeshGradientOptions): void;
-  replaceOptions(options: WebGLMeshGradientOptions): void;
   start(): void;
   stop(): void;
   resize(): void;
   destroy(): void;
+}
+
+export interface ReplaceableWebGLMeshRenderer extends WebGLMeshRenderer {
+  replaceOptions(options: WebGLMeshGradientOptions): void;
 }
 
 const DEFAULT_COLORS = ["#7c3aed", "#06b6d4", "#f97316", "#f43f5e"];
@@ -276,7 +279,7 @@ const createProgram = (gl: WebGLRenderingContext) => {
 export function createWebGLMeshRenderer(
   canvas: HTMLCanvasElement,
   initialOptions: WebGLMeshGradientOptions = {},
-): WebGLMeshRenderer | null {
+): ReplaceableWebGLMeshRenderer | null {
   try {
     const gl = (canvas.getContext("webgl", {
       alpha: false,
@@ -472,7 +475,7 @@ export function createWebGLMeshRenderer(
       }
     };
 
-    const renderer: WebGLMeshRenderer = {
+    const renderer: ReplaceableWebGLMeshRenderer = {
       canvas,
       update(nextOptions) {
         applyOptions({ ...rawOptions, ...nextOptions });

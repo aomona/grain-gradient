@@ -44,7 +44,8 @@ const renderer = createWebGLMeshRenderer(canvas, {
 renderer?.start();
 ```
 
-Returns `null` if WebGL is unavailable or shader setup fails.
+Returns a `ReplaceableWebGLMeshRenderer`, or `null` if WebGL is unavailable or shader setup fails.
+The returned type extends the original `WebGLMeshRenderer` interface with full option replacement.
 
 ### Renderer methods
 
