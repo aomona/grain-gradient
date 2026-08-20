@@ -14,6 +14,13 @@ Lightweight TypeScript helpers for WebGL shader mesh + grain gradients.
 npm i grain-gradient
 ```
 
+The React adapter is optional. Install React 18 or newer in the consuming app before importing
+`grain-gradient/react`:
+
+```bash
+npm i react@">=18"
+```
+
 ## WebGL shader renderer
 
 `grain-gradient` renders both the mesh gradient and the grain texture in one WebGL fragment shader. The React component keeps only a minimal `baseColor` background behind the canvas, so SSR and unsupported WebGL environments do not render a blank transparent box.
