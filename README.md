@@ -66,9 +66,9 @@ const renderer = createWebGLMeshRenderer(canvas, {
 renderer?.start();
 ```
 
-Call `renderer.update(options)` to merge changed controls, or `renderer.replaceOptions(options)` to
-apply a complete options snapshot and reset omitted values. Call `renderer.resize()` when the canvas
-layout changes, and `renderer.destroy()` during cleanup.
+Call `renderer?.update(options)` to merge changed controls, or `renderer?.replaceOptions(options)`
+to apply a complete options snapshot and reset omitted values. Call `renderer?.resize()` when the
+canvas layout changes, and `renderer?.destroy()` during cleanup.
 
 ## Performance defaults
 
