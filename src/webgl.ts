@@ -327,6 +327,8 @@ export function createWebGLMeshRenderer(
     let running = false;
     let lastFrame = 0;
     let pixelRatio = 0;
+    let frameValid = false;
+    let frameDirty = true;
     let startTime = performance.now();
     let motion = normalizeMotion(options);
     let motionDuration = Math.max(motion.duration, 1);
@@ -380,6 +382,8 @@ export function createWebGLMeshRenderer(
       gl.uniform2f(uniforms.frameTravel, frameTravelX, frameTravelY);
       updateAnimatedGeometry(time);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
+      frameValid = true;
+      frameDirty = false;
     };
 
     const requestLoop = () => {
@@ -409,6 +413,7 @@ export function createWebGLMeshRenderer(
       gl.uniform3fv(uniforms.colors, colorValues);
       gl.uniform1i(uniforms.colorCount, options.colorCount);
       updateAnimatedGeometry(0);
+      frameDirty = true;
     };
 
     const draw = (now: number) => {
@@ -435,14 +440,16 @@ export function createWebGLMeshRenderer(
       pixelRatio = resolvePixelRatio();
       const width = Math.max(1, Math.round(rect.width * pixelRatio));
       const height = Math.max(1, Math.round(rect.height * pixelRatio));
-      if (canvas.width !== width || canvas.height !== height) {
-        canvas.width = width;
-        canvas.height = height;
+      const backingSizeChanged = canvas.width !== width || canvas.height !== height;
+      if (backingSizeChanged) {
+        if (canvas.width !== width) canvas.width = width;
+        if (canvas.height !== height) canvas.height = height;
+        frameValid = false;
       }
       gl.viewport(0, 0, width, height);
       gl.useProgram(program);
       gl.uniform2f(uniforms.resolution, width, height);
-      if (running && !motion.enabled) render(performance.now());
+      if (!frameValid || frameDirty) render(performance.now());
     };
 
     const applyOptions = (nextOptions: WebGLMeshGradientOptions) => {
@@ -450,18 +457,18 @@ export function createWebGLMeshRenderer(
       rawOptions = nextOptions;
       options = resolveWebGLMeshGradientOptions(rawOptions);
       setStaticUniforms();
+      if (running && motion.enabled && (!wasMotionEnabled || !animationFrame)) {
+        startTime = performance.now();
+        lastFrame = 0;
+      }
       const needsResize = pixelRatio !== resolvePixelRatio();
       if (needsResize) resize();
       if (!running) return;
       if (motion.enabled) {
-        if (!wasMotionEnabled || !animationFrame) {
-          startTime = performance.now();
-          lastFrame = 0;
-        }
         requestLoop();
       } else {
         cancelLoop();
-        if (!needsResize) render(performance.now());
+        if (!frameValid || frameDirty) render(performance.now());
       }
     };
 
@@ -478,8 +485,8 @@ export function createWebGLMeshRenderer(
         running = true;
         startTime = performance.now();
         lastFrame = 0;
+        if (!frameValid || frameDirty) render(startTime);
         if (motion.enabled) requestLoop();
-        else render(startTime);
       },
       stop() {
         running = false;
@@ -497,6 +504,7 @@ export function createWebGLMeshRenderer(
     gl.enableVertexAttribArray(positionLocation);
     gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
     setStaticUniforms();
+    startTime = performance.now();
     renderer.resize();
     return renderer;
   } catch {

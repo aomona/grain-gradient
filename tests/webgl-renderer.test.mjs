@@ -9,6 +9,7 @@ const createHarness = ({ devicePixelRatio = 2, width = 100, height = 40 } = {}) 
     rects: 0,
     uniforms: new Map(),
   };
+  const size = { width, height };
   const gl = {
     ARRAY_BUFFER: 0x8892,
     COMPILE_STATUS: 0x8b81,
@@ -57,25 +58,90 @@ const createHarness = ({ devicePixelRatio = 2, width = 100, height = 40 } = {}) 
     height: 0,
     getBoundingClientRect() {
       calls.rects += 1;
-      return { width, height };
+      return size;
     },
     getContext: () => gl,
   };
   const browserWindow = { devicePixelRatio };
 
-  return { browserWindow, calls, canvas };
+  return { browserWindow, calls, canvas, size };
 };
 
 const withWindow = (browserWindow, callback) => {
   const previousWindow = globalThis.window;
+  const previousRequestAnimationFrame = globalThis.requestAnimationFrame;
+  const previousCancelAnimationFrame = globalThis.cancelAnimationFrame;
   globalThis.window = browserWindow;
+  globalThis.requestAnimationFrame = () => 1;
+  globalThis.cancelAnimationFrame = () => {};
   try {
     callback();
   } finally {
     if (previousWindow === undefined) delete globalThis.window;
     else globalThis.window = previousWindow;
+    if (previousRequestAnimationFrame === undefined) delete globalThis.requestAnimationFrame;
+    else globalThis.requestAnimationFrame = previousRequestAnimationFrame;
+    if (previousCancelAnimationFrame === undefined) delete globalThis.cancelAnimationFrame;
+    else globalThis.cancelAnimationFrame = previousCancelAnimationFrame;
   }
 };
+
+test("creation draws an initial frame into the opaque buffer", () => {
+  const harness = createHarness();
+  withWindow(harness.browserWindow, () => {
+    const renderer = createWebGLMeshRenderer(harness.canvas);
+    assert.ok(renderer);
+    assert.equal(harness.calls.draws, 1);
+  });
+});
+
+test("starting a static renderer reuses its valid initial frame", () => {
+  const harness = createHarness();
+  withWindow(harness.browserWindow, () => {
+    const renderer = createWebGLMeshRenderer(harness.canvas);
+    assert.ok(renderer);
+
+    renderer.start();
+
+    assert.equal(harness.calls.draws, 1);
+  });
+});
+
+test("an update while stopped is rendered on the next start", () => {
+  const harness = createHarness();
+  withWindow(harness.browserWindow, () => {
+    const renderer = createWebGLMeshRenderer(harness.canvas);
+    assert.ok(renderer);
+    renderer.start();
+    renderer.stop();
+    harness.calls.draws = 0;
+
+    renderer.update({ opacity: 0.4 });
+    assert.equal(harness.calls.draws, 0);
+
+    renderer.start();
+    assert.equal(harness.calls.draws, 1);
+  });
+});
+
+test("resizing an animated renderer draws its new backing buffer immediately", () => {
+  const harness = createHarness();
+  withWindow(harness.browserWindow, () => {
+    const renderer = createWebGLMeshRenderer(harness.canvas, {
+      motionPreset: "drift",
+      motionSpeed: 50,
+    });
+    assert.ok(renderer);
+    renderer.start();
+    harness.calls.draws = 0;
+    harness.size.width = 120;
+
+    renderer.resize();
+
+    assert.equal(harness.calls.draws, 1);
+    assert.equal(harness.canvas.width, 90);
+  });
+});
 
 test("ordinary static updates avoid layout and draw once", () => {
   const harness = createHarness();
