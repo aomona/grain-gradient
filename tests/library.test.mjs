@@ -27,6 +27,12 @@ test("package modules are declared side-effect free", () => {
   assert.equal(packageMetadata.sideEffects, false);
 });
 
+test("React is an optional consumer peer and an explicit development dependency", () => {
+  assert.equal(packageMetadata.peerDependencies.react, ">=18");
+  assert.equal(packageMetadata.peerDependenciesMeta.react.optional, true);
+  assert.equal(packageMetadata.devDependencies.react, "^19.2.7");
+});
+
 test("main entry exports the WebGL shader API", () => {
   assert.equal(typeof api.createWebGLMeshRenderer, "function");
   assert.equal(typeof api.resolveWebGLMeshGradientOptions, "function");

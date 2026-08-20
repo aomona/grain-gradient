@@ -68,11 +68,17 @@
     "@vitejs/plugin-react": "^6.0.3",
     "oxfmt": "^0.51.0",
     "oxlint": "^1.66.0",
+    "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "typescript": "^5.5.4",
     "vite": "^8.0.14"
   },
   "peerDependencies": {
     "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
   }
 }
