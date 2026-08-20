@@ -3,8 +3,8 @@ import type { MotionPreset } from "../../src/core.js";
 import { presets } from "../../src/core.js";
 import {
   createWebGLMeshRenderer,
-  type ReplaceableWebGLMeshRenderer,
   type WebGLMeshGradientOptions,
+  type WebGLMeshRenderer,
 } from "../../src/webgl.js";
 
 type PresetName = keyof typeof presets;
@@ -72,9 +72,8 @@ export function App() {
   const [ready, setReady] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const rendererRef = useRef<ReplaceableWebGLMeshRenderer | null>(null);
+  const rendererRef = useRef<WebGLMeshRenderer | null>(null);
   const rendererOptionsRef = useRef<WebGLMeshGradientOptions>({});
-  const appliedRendererOptionsRef = useRef<WebGLMeshGradientOptions | null>(null);
 
   const set = <Key extends keyof PlaygroundState>(key: Key, value: PlaygroundState[Key]) =>
     setState((previous) => ({ ...previous, [key]: value }));
@@ -104,14 +103,13 @@ export function App() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    let activeRenderer: ReplaceableWebGLMeshRenderer | null = null;
+    let activeRenderer: WebGLMeshRenderer | null = null;
     let resizeObserver: ResizeObserver | null = null;
 
     const stopAndDestroy = () => {
       activeRenderer?.destroy();
       activeRenderer = null;
       rendererRef.current = null;
-      appliedRendererOptionsRef.current = null;
     };
 
     const handleResize = () => activeRenderer?.resize();
@@ -130,7 +128,7 @@ export function App() {
       }
       activeRenderer = renderer;
       rendererRef.current = renderer;
-      appliedRendererOptionsRef.current = rendererOptionsRef.current;
+      renderer.resize();
       renderer.start();
       setReady(true);
       setFeedback({ state: "ready", title: "Ready", text: "Preview is live." });
@@ -172,10 +170,7 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    const renderer = rendererRef.current;
-    if (!renderer || appliedRendererOptionsRef.current === rendererOptions) return;
-    renderer.replaceOptions(rendererOptions);
-    appliedRendererOptionsRef.current = rendererOptions;
+    rendererRef.current?.update(rendererOptions);
   }, [rendererOptions]);
 
   const applyPreset = (name: PresetName) =>
