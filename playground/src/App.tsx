@@ -74,6 +74,7 @@ export function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<WebGLMeshRenderer | null>(null);
   const rendererOptionsRef = useRef<WebGLMeshGradientOptions>({});
+  const appliedRendererOptionsRef = useRef<WebGLMeshGradientOptions | null>(null);
 
   const set = <Key extends keyof PlaygroundState>(key: Key, value: PlaygroundState[Key]) =>
     setState((previous) => ({ ...previous, [key]: value }));
@@ -110,6 +111,7 @@ export function App() {
       activeRenderer?.destroy();
       activeRenderer = null;
       rendererRef.current = null;
+      appliedRendererOptionsRef.current = null;
     };
 
     const handleResize = () => activeRenderer?.resize();
@@ -128,7 +130,7 @@ export function App() {
       }
       activeRenderer = renderer;
       rendererRef.current = renderer;
-      renderer.resize();
+      appliedRendererOptionsRef.current = rendererOptionsRef.current;
       renderer.start();
       setReady(true);
       setFeedback({ state: "ready", title: "Ready", text: "Preview is live." });
@@ -170,7 +172,10 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    rendererRef.current?.update(rendererOptions);
+    const renderer = rendererRef.current;
+    if (!renderer || appliedRendererOptionsRef.current === rendererOptions) return;
+    renderer.replaceOptions(rendererOptions);
+    appliedRendererOptionsRef.current = rendererOptions;
   }, [rendererOptions]);
 
   const applyPreset = (name: PresetName) =>

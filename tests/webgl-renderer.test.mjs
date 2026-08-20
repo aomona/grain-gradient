@@ -7,6 +7,7 @@ const createHarness = ({ devicePixelRatio = 2, width = 100, height = 40 } = {}) 
   const calls = {
     draws: 0,
     rects: 0,
+    uniforms: new Map(),
   };
   const gl = {
     ARRAY_BUFFER: 0x8892,
@@ -39,7 +40,9 @@ const createHarness = ({ devicePixelRatio = 2, width = 100, height = 40 } = {}) 
     getUniformLocation: (_program, name) => name,
     linkProgram() {},
     shaderSource() {},
-    uniform1f() {},
+    uniform1f(location, value) {
+      calls.uniforms.set(location, value);
+    },
     uniform1fv() {},
     uniform1i() {},
     uniform2f() {},
@@ -132,5 +135,24 @@ test("updates detect device pixel ratio and motion resolution changes", () => {
     renderer.update({ motionMaxPixelRatio: 0.75 });
     assert.equal(harness.calls.rects, 1);
     assert.equal(harness.canvas.width, 75);
+  });
+});
+
+test("option replacement resets omissions without changing update patch semantics", () => {
+  const harness = createHarness();
+  withWindow(harness.browserWindow, () => {
+    const renderer = createWebGLMeshRenderer(harness.canvas, {
+      maxPixelRatio: 2,
+      opacity: 0.8,
+    });
+    assert.ok(renderer);
+
+    renderer.update({ contrast: 2 });
+    assert.equal(harness.calls.uniforms.get("u_grainOpacity"), 0.8);
+    assert.equal(harness.canvas.width, 200);
+
+    renderer.replaceOptions({ contrast: 2 });
+    assert.equal(harness.calls.uniforms.get("u_grainOpacity"), 0.2);
+    assert.equal(harness.canvas.width, 125);
   });
 });

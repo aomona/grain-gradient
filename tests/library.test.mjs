@@ -163,6 +163,22 @@ test("react entry exports the WebGL component and hooks", async () => {
   assert.equal(typeof react.resolveWebGLMeshGradientOptions, "function");
 });
 
+test("react avoids replaying the initial renderer options", () => {
+  const source = readFileSync(new URL("../dist/react.js", import.meta.url), "utf8");
+  assert.ok(
+    !source.includes("renderer.resize();"),
+    "the renderer factory already sizes the canvas",
+  );
+  assert.ok(
+    source.includes("appliedWebglKeyRef.current === webglKey"),
+    "the initial options should not be applied twice",
+  );
+  assert.ok(
+    source.includes("renderer.replaceOptions(options)"),
+    "later React props should replace the complete options snapshot",
+  );
+});
+
 test("webgl/react compatibility entry exports the same API", async () => {
   const webglReact = await import("../dist/webgl-react.js");
   assert.notEqual(webglReact.WebGLGrainGradient, undefined);

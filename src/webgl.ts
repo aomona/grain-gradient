@@ -30,6 +30,7 @@ export interface ResolvedWebGLMeshGradientOptions {
 export interface WebGLMeshRenderer {
   readonly canvas: HTMLCanvasElement;
   update(options: WebGLMeshGradientOptions): void;
+  replaceOptions(options: WebGLMeshGradientOptions): void;
   start(): void;
   stop(): void;
   resize(): void;
@@ -429,26 +430,48 @@ export function createWebGLMeshRenderer(
       return Math.min(window.devicePixelRatio || 1, pixelRatioLimit);
     };
 
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      pixelRatio = resolvePixelRatio();
+      const width = Math.max(1, Math.round(rect.width * pixelRatio));
+      const height = Math.max(1, Math.round(rect.height * pixelRatio));
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+      gl.viewport(0, 0, width, height);
+      gl.useProgram(program);
+      gl.uniform2f(uniforms.resolution, width, height);
+      if (running && !motion.enabled) render(performance.now());
+    };
+
+    const applyOptions = (nextOptions: WebGLMeshGradientOptions) => {
+      const wasMotionEnabled = motion.enabled;
+      rawOptions = nextOptions;
+      options = resolveWebGLMeshGradientOptions(rawOptions);
+      setStaticUniforms();
+      const needsResize = pixelRatio !== resolvePixelRatio();
+      if (needsResize) resize();
+      if (!running) return;
+      if (motion.enabled) {
+        if (!wasMotionEnabled || !animationFrame) {
+          startTime = performance.now();
+          lastFrame = 0;
+        }
+        requestLoop();
+      } else {
+        cancelLoop();
+        if (!needsResize) render(performance.now());
+      }
+    };
+
     const renderer: WebGLMeshRenderer = {
       canvas,
       update(nextOptions) {
-        const wasMotionEnabled = motion.enabled;
-        rawOptions = { ...rawOptions, ...nextOptions };
-        options = resolveWebGLMeshGradientOptions(rawOptions);
-        setStaticUniforms();
-        const needsResize = pixelRatio !== resolvePixelRatio();
-        if (needsResize) renderer.resize();
-        if (!running) return;
-        if (motion.enabled) {
-          if (!wasMotionEnabled || !animationFrame) {
-            startTime = performance.now();
-            lastFrame = 0;
-          }
-          requestLoop();
-        } else {
-          cancelLoop();
-          if (!needsResize) render(performance.now());
-        }
+        applyOptions({ ...rawOptions, ...nextOptions });
+      },
+      replaceOptions(nextOptions) {
+        applyOptions({ ...nextOptions });
       },
       start() {
         if (running) return;
@@ -462,20 +485,7 @@ export function createWebGLMeshRenderer(
         running = false;
         cancelLoop();
       },
-      resize() {
-        const rect = canvas.getBoundingClientRect();
-        pixelRatio = resolvePixelRatio();
-        const width = Math.max(1, Math.round(rect.width * pixelRatio));
-        const height = Math.max(1, Math.round(rect.height * pixelRatio));
-        if (canvas.width !== width || canvas.height !== height) {
-          canvas.width = width;
-          canvas.height = height;
-        }
-        gl.viewport(0, 0, width, height);
-        gl.useProgram(program);
-        gl.uniform2f(uniforms.resolution, width, height);
-        if (running && !motion.enabled) render(performance.now());
-      },
+      resize,
       destroy() {
         renderer.stop();
         gl.deleteBuffer(buffer);
