@@ -96,7 +96,7 @@ Raise these only when you need sharper or smoother animated rendering.
 ## Development
 
 - `npm run build`: compile the TypeScript source to `dist/`
-- `npm run build:playground`: build the Vite React playground to `dist-playground/`
+- `npm run build:playground`: build the Vite playground to `dist-playground/`
 - `npm run test`: run the Node test suite after building
 - `npm run lint`: check the codebase with oxlint
 - `npm run format:check`: verify formatting with oxfmt

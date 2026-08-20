@@ -7,7 +7,159 @@
     <meta name="description" content="Tune WebGL shader mesh and grain gradients in real time." />
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="./src/main.tsx"></script>
+    <div id="root">
+      <div class="app">
+        <aside class="sidebar">
+          <div class="brand">
+            <h1>grain-gradient playground</h1>
+            <p>Live preview for WebGL shader mesh + grain motion.</p>
+          </div>
+
+          <section class="controls card" aria-label="Gradient controls">
+            <div class="field">
+              <div class="label-row">
+                <label for="preset">Preset</label>
+              </div>
+              <select id="preset">
+                <option value="Aurora Citrus">Aurora Citrus</option>
+                <option value="Blue Hour">Blue Hour</option>
+                <option value="Candy Fog">Candy Fog</option>
+                <option value="Forest Glass">Forest Glass</option>
+                <option value="Midnight Bloom">Midnight Bloom</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <div class="label-row">
+                <label>Colors</label>
+                <span class="value">4</span>
+              </div>
+              <div class="colors">
+                <label class="color-field">
+                  <span class="value">Color 1</span>
+                  <input type="color" aria-label="Color 1" value="#c2e812" />
+                </label>
+                <label class="color-field">
+                  <span class="value">Color 2</span>
+                  <input type="color" aria-label="Color 2" value="#ff7f11" />
+                </label>
+                <label class="color-field">
+                  <span class="value">Color 3</span>
+                  <input type="color" aria-label="Color 3" value="#ee4266" />
+                </label>
+                <label class="color-field">
+                  <span class="value">Color 4</span>
+                  <input type="color" aria-label="Color 4" value="#2a1e5c" />
+                </label>
+              </div>
+            </div>
+
+            <div class="field">
+              <div class="label-row">
+                <label for="intensity">Intensity</label>
+                <span class="value">1.45</span>
+              </div>
+              <input id="intensity" type="range" min="0.2" max="2.5" step="0.01" value="1.45" />
+            </div>
+
+            <div class="field">
+              <div class="label-row">
+                <label for="saturation">Saturation</label>
+                <span class="value">1.28</span>
+              </div>
+              <input id="saturation" type="range" min="0.2" max="2.5" step="0.01" value="1.28" />
+            </div>
+
+            <div class="field">
+              <div class="label-row">
+                <label for="swirl">Swirl</label>
+                <span class="value">30</span>
+              </div>
+              <input id="swirl" type="range" min="0" max="100" step="1" value="30" />
+            </div>
+
+            <div class="field">
+              <div class="label-row">
+                <label for="motionPreset">Motion preset</label>
+              </div>
+              <select id="motionPreset">
+                <option value="none">Static</option>
+                <option value="drift" selected>Slow drift</option>
+                <option value="breathe">Soft breathe</option>
+                <option value="orbit">Gentle orbit</option>
+              </select>
+              <p class="motion-help">
+                Pick one preset for movement, then fine-tune speed and intensity.
+              </p>
+            </div>
+
+            <div class="field">
+              <div class="label-row">
+                <label for="motionSpeed">Motion speed</label>
+                <span class="value">38</span>
+              </div>
+              <input id="motionSpeed" type="range" min="0" max="100" step="1" value="38" />
+            </div>
+
+            <div class="field">
+              <div class="label-row">
+                <label for="motionIntensity">Motion intensity</label>
+                <span class="value">46</span>
+              </div>
+              <input id="motionIntensity" type="range" min="0" max="100" step="1" value="46" />
+            </div>
+
+            <div class="field">
+              <div class="label-row">
+                <label for="opacity">Grain opacity</label>
+                <span class="value">0.2</span>
+              </div>
+              <input id="opacity" type="range" min="0" max="1" step="0.01" value="0.2" />
+            </div>
+
+            <div class="field">
+              <div class="label-row">
+                <label for="frequency">Grain frequency</label>
+                <span class="value">1.25</span>
+              </div>
+              <input id="frequency" type="range" min="0.04" max="2.4" step="0.01" value="1.25" />
+            </div>
+
+            <div class="field">
+              <div class="label-row">
+                <label for="contrast">Grain contrast</label>
+                <span class="value">1.7</span>
+              </div>
+              <input id="contrast" type="range" min="1" max="2.5" step="0.01" value="1.7" />
+            </div>
+
+            <div class="field">
+              <div class="label-row">
+                <label for="seedRange">Seed</label>
+                <span class="value">1</span>
+              </div>
+              <div class="seed-grid">
+                <input id="seedRange" type="range" min="0" max="9999" step="1" value="1" />
+                <input id="seedNumber" type="number" min="0" max="9999" step="1" value="1" />
+              </div>
+            </div>
+
+            <div class="button-row">
+              <button type="button" class="secondary">Reset preset</button>
+            </div>
+
+            <div class="feedback" data-state="ready" aria-live="polite">
+              <strong>Ready</strong>
+              <p>Preview is live.</p>
+            </div>
+          </section>
+        </aside>
+
+        <main class="preview" aria-label="Live background preview" style="background: #0f1020">
+          <canvas class="preview-canvas" aria-hidden="true" data-ready="false"></canvas>
+        </main>
+      </div>
+    </div>
+    <script type="module" src="./src/main.ts"></script>
   </body>
 </html>
