@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 import * as api from "../dist/index.js";
+import * as core from "grain-gradient/core";
 import { isWebGLAvailable, resolveWebGLMeshGradientOptions } from "../dist/webgl.js";
 
 const { presets } = api;
@@ -11,6 +12,12 @@ test("exports presets", () => {
   assert.equal(Object.keys(presets).length, 5);
   for (const preset of Object.values(presets)) assert.equal(preset.colors.length, 4);
   assert.deepEqual(presets["Aurora Citrus"].colors, ["#c2e812", "#ff7f11", "#ee4266", "#2a1e5c"]);
+});
+
+test("core entry exports presets without the WebGL renderer", () => {
+  assert.equal(core.presets, presets);
+  assert.equal(core.createWebGLMeshRenderer, undefined);
+  assert.deepEqual(Object.keys(core), ["presets"]);
 });
 
 test("main entry exports the WebGL shader API", () => {
