@@ -3,8 +3,8 @@ import type { CSSProperties, ReactNode } from "react";
 import type { GrainGradientOptions } from "./core.js";
 import {
   createWebGLMeshRenderer,
+  type ReplaceableWebGLMeshRenderer,
   type WebGLMeshGradientOptions,
-  type WebGLMeshRenderer,
 } from "./webgl.js";
 
 export interface GrainGradientProps extends GrainGradientOptions, WebGLMeshGradientOptions {
@@ -48,7 +48,8 @@ export function useGrainGradient(options: GrainGradientOptions & WebGLMeshGradie
 export const GrainGradient = memo(function GrainGradient(props: GrainGradientProps) {
   const { children, className, style, canvasStyle, ...options } = props;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const rendererRef = useRef<WebGLMeshRenderer | null>(null);
+  const rendererRef = useRef<ReplaceableWebGLMeshRenderer | null>(null);
+  const appliedWebglKeyRef = useRef<string | null>(null);
   const optionsRef = useRef(options);
   optionsRef.current = options;
   const [webglReady, setWebglReady] = useState(false);
@@ -73,18 +74,21 @@ export const GrainGradient = memo(function GrainGradient(props: GrainGradientPro
     options.fps,
     options.pauseWhenHidden,
   ]);
+  const webglKeyRef = useRef(webglKey);
+  webglKeyRef.current = webglKey;
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    let activeRenderer: WebGLMeshRenderer | null = null;
+    let activeRenderer: ReplaceableWebGLMeshRenderer | null = null;
     let resizeObserver: ResizeObserver | null = null;
 
     const stopAndDestroy = () => {
       activeRenderer?.destroy();
       activeRenderer = null;
       rendererRef.current = null;
+      appliedWebglKeyRef.current = null;
     };
 
     const handleResize = () => activeRenderer?.resize();
@@ -98,7 +102,7 @@ export const GrainGradient = memo(function GrainGradient(props: GrainGradientPro
       }
       activeRenderer = renderer;
       rendererRef.current = renderer;
-      renderer.resize();
+      appliedWebglKeyRef.current = webglKeyRef.current;
       renderer.start();
       setWebglReady(true);
     };
@@ -134,7 +138,10 @@ export const GrainGradient = memo(function GrainGradient(props: GrainGradientPro
   }, []);
 
   useEffect(() => {
-    rendererRef.current?.update(options);
+    const renderer = rendererRef.current;
+    if (!renderer || appliedWebglKeyRef.current === webglKey) return;
+    renderer.replaceOptions(options);
+    appliedWebglKeyRef.current = webglKey;
   }, [webglKey]);
 
   return (
@@ -153,7 +160,11 @@ export const GrainGradient = memo(function GrainGradient(props: GrainGradientPro
   );
 });
 
-export type { WebGLMeshGradientOptions, WebGLMeshRenderer } from "./webgl.js";
+export type {
+  ReplaceableWebGLMeshRenderer,
+  WebGLMeshGradientOptions,
+  WebGLMeshRenderer,
+} from "./webgl.js";
 export {
   createWebGLMeshRenderer,
   isWebGLAvailable,

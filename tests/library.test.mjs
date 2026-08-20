@@ -133,6 +133,15 @@ test("motion trig is computed on CPU and passed as uniforms", () => {
   assert.ok(source.includes("u_frameTravel"), "frame travel uniform should exist");
 });
 
+test("requests an opaque WebGL drawing buffer", () => {
+  const source = readFileSync(new URL("../dist/webgl.js", import.meta.url), "utf8");
+  assert.ok(source.includes("alpha: false"), "the drawing buffer should omit its alpha channel");
+  assert.ok(
+    !source.includes("alpha: true"),
+    "the opaque shader should not request an alpha channel",
+  );
+});
+
 test("static renders disable motion travel", () => {
   const source = readFileSync(new URL("../dist/webgl.js", import.meta.url), "utf8");
   assert.ok(
@@ -161,6 +170,22 @@ test("react entry exports the WebGL component and hooks", async () => {
   assert.equal(typeof react.useGrainGradient, "function");
   assert.equal(typeof react.createWebGLMeshRenderer, "function");
   assert.equal(typeof react.resolveWebGLMeshGradientOptions, "function");
+});
+
+test("react avoids replaying the initial renderer options", () => {
+  const source = readFileSync(new URL("../dist/react.js", import.meta.url), "utf8");
+  assert.ok(
+    !source.includes("renderer.resize();"),
+    "the renderer factory already sizes the canvas",
+  );
+  assert.ok(
+    source.includes("appliedWebglKeyRef.current === webglKey"),
+    "the initial options should not be applied twice",
+  );
+  assert.ok(
+    source.includes("renderer.replaceOptions(options)"),
+    "later React props should replace the complete options snapshot",
+  );
 });
 
 test("webgl/react compatibility entry exports the same API", async () => {

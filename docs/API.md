@@ -44,13 +44,15 @@ const renderer = createWebGLMeshRenderer(canvas, {
 renderer?.start();
 ```
 
-Returns `null` if WebGL is unavailable or shader setup fails.
+Returns a `ReplaceableWebGLMeshRenderer`, or `null` if WebGL is unavailable or shader setup fails.
+The returned type extends the original `WebGLMeshRenderer` interface with full option replacement.
 
 ### Renderer methods
 
 - `start()`: start rendering. Static gradients render once; animated gradients render on `requestAnimationFrame`.
 - `stop()`: stop the animation loop.
 - `update(options)`: merge and apply new options.
+- `replaceOptions(options)`: replace all options; omitted values return to their defaults.
 - `resize()`: sync the canvas backing size and viewport with the rendered element size.
 - `destroy()`: stop rendering and release WebGL resources.
 

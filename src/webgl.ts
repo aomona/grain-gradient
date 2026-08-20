@@ -36,6 +36,10 @@ export interface WebGLMeshRenderer {
   destroy(): void;
 }
 
+export interface ReplaceableWebGLMeshRenderer extends WebGLMeshRenderer {
+  replaceOptions(options: WebGLMeshGradientOptions): void;
+}
+
 const DEFAULT_COLORS = ["#7c3aed", "#06b6d4", "#f97316", "#f43f5e"];
 const BLOB_POSITIONS = [0.12, 0.18, 0.86, 0.16, 0.7, 0.82, 0.2, 0.88, 0.5, 0.46, 0.18, 0.56];
 const BLOB_SIZES = [0.34, 0.32, 0.36, 0.32, 0.3, 0.28];
@@ -275,16 +279,16 @@ const createProgram = (gl: WebGLRenderingContext) => {
 export function createWebGLMeshRenderer(
   canvas: HTMLCanvasElement,
   initialOptions: WebGLMeshGradientOptions = {},
-): WebGLMeshRenderer | null {
+): ReplaceableWebGLMeshRenderer | null {
   try {
     const gl = (canvas.getContext("webgl", {
-      alpha: true,
+      alpha: false,
       antialias: false,
       depth: false,
       stencil: false,
     }) ||
       canvas.getContext("experimental-webgl", {
-        alpha: true,
+        alpha: false,
         antialias: false,
         depth: false,
         stencil: false,
@@ -325,6 +329,9 @@ export function createWebGLMeshRenderer(
     let animationFrame = 0;
     let running = false;
     let lastFrame = 0;
+    let pixelRatio = 0;
+    let frameValid = false;
+    let frameDirty = true;
     let startTime = performance.now();
     let motion = normalizeMotion(options);
     let motionDuration = Math.max(motion.duration, 1);
@@ -378,6 +385,8 @@ export function createWebGLMeshRenderer(
       gl.uniform2f(uniforms.frameTravel, frameTravelX, frameTravelY);
       updateAnimatedGeometry(time);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
+      frameValid = true;
+      frameDirty = false;
     };
 
     const requestLoop = () => {
@@ -407,6 +416,7 @@ export function createWebGLMeshRenderer(
       gl.uniform3fv(uniforms.colors, colorValues);
       gl.uniform1i(uniforms.colorCount, options.colorCount);
       updateAnimatedGeometry(0);
+      frameDirty = true;
     };
 
     const draw = (now: number) => {
@@ -423,55 +433,69 @@ export function createWebGLMeshRenderer(
       render(now);
     };
 
-    const renderer: WebGLMeshRenderer = {
+    const resolvePixelRatio = () => {
+      const pixelRatioLimit = motion.enabled ? options.motionMaxPixelRatio : options.maxPixelRatio;
+      return Math.min(window.devicePixelRatio || 1, pixelRatioLimit);
+    };
+
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      pixelRatio = resolvePixelRatio();
+      const width = Math.max(1, Math.round(rect.width * pixelRatio));
+      const height = Math.max(1, Math.round(rect.height * pixelRatio));
+      const backingSizeChanged = canvas.width !== width || canvas.height !== height;
+      if (backingSizeChanged) {
+        if (canvas.width !== width) canvas.width = width;
+        if (canvas.height !== height) canvas.height = height;
+        frameValid = false;
+      }
+      gl.viewport(0, 0, width, height);
+      gl.useProgram(program);
+      gl.uniform2f(uniforms.resolution, width, height);
+      if (!frameValid || frameDirty) render(performance.now());
+    };
+
+    const applyOptions = (nextOptions: WebGLMeshGradientOptions) => {
+      const wasMotionEnabled = motion.enabled;
+      rawOptions = nextOptions;
+      options = resolveWebGLMeshGradientOptions(rawOptions);
+      setStaticUniforms();
+      if (running && motion.enabled && (!wasMotionEnabled || !animationFrame)) {
+        startTime = performance.now();
+        lastFrame = 0;
+      }
+      const needsResize = pixelRatio !== resolvePixelRatio();
+      if (needsResize) resize();
+      if (!running) return;
+      if (motion.enabled) {
+        requestLoop();
+      } else {
+        cancelLoop();
+        if (!frameValid || frameDirty) render(performance.now());
+      }
+    };
+
+    const renderer: ReplaceableWebGLMeshRenderer = {
       canvas,
       update(nextOptions) {
-        const wasMotionEnabled = motion.enabled;
-        rawOptions = { ...rawOptions, ...nextOptions };
-        options = resolveWebGLMeshGradientOptions(rawOptions);
-        setStaticUniforms();
-        renderer.resize();
-        if (!running) return;
-        if (motion.enabled) {
-          if (!wasMotionEnabled || !animationFrame) {
-            startTime = performance.now();
-            lastFrame = 0;
-          }
-          requestLoop();
-        } else {
-          cancelLoop();
-          render(performance.now());
-        }
+        applyOptions({ ...rawOptions, ...nextOptions });
+      },
+      replaceOptions(nextOptions) {
+        applyOptions({ ...nextOptions });
       },
       start() {
         if (running) return;
         running = true;
         startTime = performance.now();
         lastFrame = 0;
+        if (!frameValid || frameDirty) render(startTime);
         if (motion.enabled) requestLoop();
-        else render(startTime);
       },
       stop() {
         running = false;
         cancelLoop();
       },
-      resize() {
-        const rect = canvas.getBoundingClientRect();
-        const pixelRatioLimit = motion.enabled
-          ? options.motionMaxPixelRatio
-          : options.maxPixelRatio;
-        const pixelRatio = Math.min(window.devicePixelRatio || 1, pixelRatioLimit);
-        const width = Math.max(1, Math.round(rect.width * pixelRatio));
-        const height = Math.max(1, Math.round(rect.height * pixelRatio));
-        if (canvas.width !== width || canvas.height !== height) {
-          canvas.width = width;
-          canvas.height = height;
-        }
-        gl.viewport(0, 0, width, height);
-        gl.useProgram(program);
-        gl.uniform2f(uniforms.resolution, width, height);
-        if (running && !motion.enabled) render(performance.now());
-      },
+      resize,
       destroy() {
         renderer.stop();
         gl.deleteBuffer(buffer);
@@ -483,6 +507,7 @@ export function createWebGLMeshRenderer(
     gl.enableVertexAttribArray(positionLocation);
     gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
     setStaticUniforms();
+    startTime = performance.now();
     renderer.resize();
     return renderer;
   } catch {
